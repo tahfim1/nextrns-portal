@@ -103,9 +103,9 @@ export async function POST(request: NextRequest) {
     const { title, description, clientId, proofType, proofUrl } =
       await request.json();
 
-    if (!title || !clientId || !proofType || !proofUrl) {
+    if (!title || !clientId || !proofType) {
       return NextResponse.json(
-        { error: "Title, client, proof type, and proof URL are required" },
+        { error: "Title, client, and proof type are required" },
         { status: 400 }
       );
     }
@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
         title,
         description: description || null,
         proofType,
-        proofUrl,
+        proofUrl: proofUrl || "",
       })
       .returning();
 

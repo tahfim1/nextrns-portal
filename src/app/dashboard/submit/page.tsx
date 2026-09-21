@@ -116,12 +116,6 @@ export default function SubmitTaskPage() {
         setUploading(false);
       }
 
-      if (!finalProofUrl) {
-        showToast("Please provide proof (screenshot or link)", "error");
-        setSubmitting(false);
-        return;
-      }
-
       // Create task
       const res = await fetch("/api/tasks", {
         method: "POST",
@@ -281,7 +275,7 @@ export default function SubmitTaskPage() {
           {proofType === "screenshot" ? (
             <div>
               <label className="block text-sm font-medium text-text-secondary mb-3">
-                Upload Screenshot <span className="text-red-400">*</span>
+                Upload Screenshot <span className="text-text-muted">(optional)</span>
               </label>
               <div
                 className={`upload-zone ${dragover ? "dragover" : ""}`}
@@ -336,7 +330,7 @@ export default function SubmitTaskPage() {
           ) : (
             <div>
               <label htmlFor="proofLink" className="block text-sm font-medium text-text-secondary mb-2">
-                Proof Link <span className="text-red-400">*</span>
+                Proof Link <span className="text-text-muted">(optional)</span>
               </label>
               <input
                 id="proofLink"
@@ -345,7 +339,6 @@ export default function SubmitTaskPage() {
                 onChange={(e) => setProofUrl(e.target.value)}
                 className="input-glass"
                 placeholder="https://example.com/my-work"
-                required={proofType === "link"}
               />
               <p className="text-xs text-text-muted mt-2">Paste a URL to your published work, post, or deliverable</p>
             </div>
@@ -355,7 +348,7 @@ export default function SubmitTaskPage() {
         {/* Submit Button */}
         <button
           type="submit"
-          disabled={submitting || uploading || !title || !clientId || (proofType === "screenshot" && !file) || (proofType === "link" && !proofUrl)}
+          disabled={submitting || uploading || !title || !clientId}
           className="btn-primary w-full py-4 text-base rounded-2xl disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <span className="flex items-center justify-center gap-2">
