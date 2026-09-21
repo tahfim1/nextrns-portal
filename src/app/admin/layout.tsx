@@ -92,7 +92,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         {/* Sidebar */}
         <aside
-          className={`fixed lg:sticky top-0 left-0 z-50 h-screen w-72 lg:self-start glass-card rounded-none border-r border-glass-border flex flex-col transition-transform duration-300 ${
+          className={`fixed top-0 left-0 z-50 h-screen w-72 glass-card rounded-none border-r border-glass-border flex flex-col transition-transform duration-300 ${
             sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
           }`}
         >
@@ -172,7 +172,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 min-h-screen relative">
+        <main className="flex-1 min-h-screen relative lg:ml-72">
           {/* Top bar (mobile) */}
           <header className="lg:hidden sticky top-0 z-30 glass-card rounded-none border-b border-glass-border p-4 flex items-center justify-between">
             <button onClick={() => setSidebarOpen(true)} className="p-2 rounded-xl hover:bg-glass-hover transition-colors">
