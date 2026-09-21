@@ -53,6 +53,7 @@ export const tasks = pgTable("tasks", {
   description: text("description"),
   proofType: proofTypeEnum("proof_type").notNull(),
   proofUrl: text("proof_url").notNull(),
+  proofLink: text("proof_link"),
   status: taskStatusEnum("status").default("submitted").notNull(),
   adminNotes: text("admin_notes"),
   submittedAt: timestamp("submitted_at").defaultNow().notNull(),

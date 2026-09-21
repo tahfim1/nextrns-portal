@@ -19,8 +19,8 @@ export default function SubmitTaskPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [clientId, setClientId] = useState("");
-  const [proofType, setProofType] = useState<"screenshot" | "link">("screenshot");
   const [proofUrl, setProofUrl] = useState("");
+  const [proofLink, setProofLink] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -95,8 +95,8 @@ export default function SubmitTaskPage() {
     let finalProofUrl = proofUrl;
 
     try {
-      // Upload file first if screenshot
-      if (proofType === "screenshot" && file) {
+      // Upload file if screenshot provided
+      if (file) {
         setUploading(true);
         const formData = new FormData();
         formData.append("file", file);
@@ -124,8 +124,9 @@ export default function SubmitTaskPage() {
           title,
           description,
           clientId,
-          proofType,
+          proofType: file ? "screenshot" : (proofLink ? "link" : "screenshot"),
           proofUrl: finalProofUrl,
+          proofLink,
         }),
       });
 
@@ -233,116 +234,78 @@ export default function SubmitTaskPage() {
           />
         </div>
 
-        {/* Proof Type Toggle */}
+
+
+        {/* Screenshot Input */}
         <div className="glass-card p-6">
           <label className="block text-sm font-medium text-text-secondary mb-3">
-            Proof Type <span className="text-red-400">*</span>
+            Upload Screenshot <span className="text-text-muted">(optional)</span>
           </label>
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={() => { setProofType("screenshot"); setProofUrl(""); }}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium transition-all ${
-                proofType === "screenshot"
-                  ? "bg-gradient-to-r from-violet-500/20 to-purple-500/20 text-white border border-violet-500/30"
-                  : "bg-glass text-text-secondary border border-glass-border hover:border-glass-border"
-              }`}
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
-              </svg>
-              Screenshot
-            </button>
-            <button
-              type="button"
-              onClick={() => { setProofType("link"); setFile(null); setFilePreview(null); }}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium transition-all ${
-                proofType === "link"
-                  ? "bg-gradient-to-r from-blue-500/20 to-cyan-500/20 text-white border border-blue-500/30"
-                  : "bg-glass text-text-secondary border border-glass-border hover:border-glass-border"
-              }`}
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
-              </svg>
-              Link
-            </button>
+          <div
+            className={`upload-zone ${dragover ? "dragover" : ""}`}
+            onDragOver={(e) => { e.preventDefault(); setDragover(true); }}
+            onDragLeave={() => setDragover(false)}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {filePreview ? (
+              <div className="relative">
+                <img
+                  src={filePreview}
+                  alt="Preview"
+                  className="max-h-48 mx-auto rounded-lg object-contain"
+                />
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setFile(null);
+                    setFilePreview(null);
+                  }}
+                  className="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-500/80 text-white flex items-center justify-center hover:bg-red-500 transition-colors"
+                >
+                  ✕
+                </button>
+                <p className="text-xs text-text-muted mt-3">{file?.name} ({((file?.size || 0) / 1024 / 1024).toFixed(2)} MB)</p>
+              </div>
+            ) : (
+              <>
+                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-violet-500/10 flex items-center justify-center">
+                  <svg className="w-8 h-8 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                  </svg>
+                </div>
+                <p className="text-text-primary font-medium mb-1">Drop your screenshot here</p>
+                <p className="text-text-muted text-sm">or click to browse • Max 4.5MB</p>
+              </>
+            )}
           </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) handleFileSelect(f);
+            }}
+          />
         </div>
 
-        {/* Proof Input */}
+        {/* Link Input */}
         <div className="glass-card p-6">
-          {proofType === "screenshot" ? (
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-3">
-                Upload Screenshot <span className="text-text-muted">(optional)</span>
-              </label>
-              <div
-                className={`upload-zone ${dragover ? "dragover" : ""}`}
-                onDragOver={(e) => { e.preventDefault(); setDragover(true); }}
-                onDragLeave={() => setDragover(false)}
-                onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                {filePreview ? (
-                  <div className="relative">
-                    <img
-                      src={filePreview}
-                      alt="Preview"
-                      className="max-h-48 mx-auto rounded-lg object-contain"
-                    />
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setFile(null);
-                        setFilePreview(null);
-                      }}
-                      className="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-500/80 text-white flex items-center justify-center hover:bg-red-500 transition-colors"
-                    >
-                      ✕
-                    </button>
-                    <p className="text-xs text-text-muted mt-3">{file?.name} ({((file?.size || 0) / 1024 / 1024).toFixed(2)} MB)</p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-violet-500/10 flex items-center justify-center">
-                      <svg className="w-8 h-8 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-                      </svg>
-                    </div>
-                    <p className="text-text-primary font-medium mb-1">Drop your screenshot here</p>
-                    <p className="text-text-muted text-sm">or click to browse • Max 4.5MB</p>
-                  </>
-                )}
-              </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) handleFileSelect(f);
-                }}
-              />
-            </div>
-          ) : (
-            <div>
-              <label htmlFor="proofLink" className="block text-sm font-medium text-text-secondary mb-2">
-                Proof Link <span className="text-text-muted">(optional)</span>
-              </label>
-              <input
-                id="proofLink"
-                type="url"
-                value={proofUrl}
-                onChange={(e) => setProofUrl(e.target.value)}
-                className="input-glass"
-                placeholder="https://example.com/my-work"
-              />
-              <p className="text-xs text-text-muted mt-2">Paste a URL to your published work, post, or deliverable</p>
-            </div>
-          )}
+          <label htmlFor="proofLink" className="block text-sm font-medium text-text-secondary mb-2">
+            Proof Link <span className="text-text-muted">(optional)</span>
+          </label>
+          <input
+            id="proofLink"
+            type="url"
+            value={proofLink}
+            onChange={(e) => setProofLink(e.target.value)}
+            className="input-glass"
+            placeholder="https://example.com/my-work"
+          />
+          <p className="text-xs text-text-muted mt-2">Paste a URL to your published work, post, or deliverable</p>
         </div>
 
         {/* Submit Button */}

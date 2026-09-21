@@ -8,6 +8,7 @@ interface Task {
   description: string | null;
   proofType: string;
   proofUrl: string;
+  proofLink: string | null;
   status: string;
   adminNotes: string | null;
   submittedAt: string;
@@ -153,26 +154,35 @@ export default function HistoryPage() {
                   {task.description && (
                     <p className="text-sm text-text-secondary mb-4">{task.description}</p>
                   )}
-                  <div className="flex flex-wrap gap-4">
-                    <a
-                      href={task.proofUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-500/10 text-blue-400 text-sm hover:bg-blue-500/20 transition-colors"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                      </svg>
-                      View Proof
-                    </a>
-                    {task.proofType === "screenshot" && (
-                      <div className="w-full mt-2">
-                        <img
-                          src={task.proofUrl}
-                          alt="Task proof"
-                          className="rounded-xl max-h-64 object-contain border border-glass-border"
-                        />
+                  <div className="flex flex-col gap-3">
+                    {task.proofLink && (
+                      <div>
+                        <a
+                          href={task.proofLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-500/10 text-blue-400 text-sm hover:bg-blue-500/20 transition-colors"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                          </svg>
+                          Open Proof Link
+                        </a>
                       </div>
+                    )}
+                    {task.proofUrl && task.proofUrl.length > 0 && (
+                      <div className="w-full">
+                        <a href={task.proofUrl} target="_blank" rel="noopener noreferrer">
+                          <img
+                            src={task.proofUrl}
+                            alt="Task proof"
+                            className="rounded-xl max-h-64 object-contain border border-glass-border hover:opacity-90 transition-opacity"
+                          />
+                        </a>
+                      </div>
+                    )}
+                    {(!task.proofUrl || task.proofUrl.length === 0) && !task.proofLink && (
+                      <p className="text-sm text-text-muted italic">No proof provided.</p>
                     )}
                   </div>
                   {task.adminNotes && (

@@ -50,6 +50,7 @@ export async function GET(request: NextRequest) {
         description: tasks.description,
         proofType: tasks.proofType,
         proofUrl: tasks.proofUrl,
+        proofLink: tasks.proofLink,
         status: tasks.status,
         adminNotes: tasks.adminNotes,
         submittedAt: tasks.submittedAt,
@@ -100,7 +101,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { title, description, clientId, proofType, proofUrl } =
+    const { title, description, clientId, proofType, proofUrl, proofLink } =
       await request.json();
 
     if (!title || !clientId || !proofType) {
@@ -117,8 +118,9 @@ export async function POST(request: NextRequest) {
         clientId: parseInt(clientId),
         title,
         description: description || null,
-        proofType,
+        proofType: proofType || "screenshot",
         proofUrl: proofUrl || "",
+        proofLink: proofLink || null,
       })
       .returning();
 
