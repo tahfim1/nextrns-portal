@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import JSZip from "jszip";
 
 interface Stats {
   total: number;
@@ -29,11 +30,27 @@ interface Activity {
   userAvatar: string;
 }
 
+interface ExportTask {
+  id: number;
+  title: string;
+  proofUrl: string;
+  proofLink: string | null;
+  status: string;
+  clientName: string;
+  userName: string;
+}
+
 export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [employeeStats, setEmployeeStats] = useState<EmployeeStat[]>([]);
   const [recentActivity, setRecentActivity] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [exportDate, setExportDate] = useState(() => {
+    const now = new Date();
+    return now.toISOString().split("T")[0];
+  });
+  const [exporting, setExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState("");
 
   useEffect(() => {
     fetch("/api/stats")
@@ -60,6 +77,108 @@ export default function AdminDashboard() {
     if (days < 7) return `${days}d ago`;
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
+
+  const sanitizeName = (name: string) =>
+    name.replace(/[<>:"/\\|?*]/g, "").replace(/&/g, "and").replace(/\s+/g, "_").substring(0, 60);
+
+  const getExtFromUrl = (url: string) => {
+    try {
+      const pathname = new URL(url).pathname;
+      const match = pathname.match(/\.(jpg|jpeg|png|gif|webp|svg|bmp|pdf)$/i);
+      if (match) return "." + match[1].toLowerCase();
+    } catch {}
+    return ".png";
+  };
+
+  const handleExport = useCallback(async () => {
+    setExporting(true);
+    setExportProgress("Fetching tasks...");
+
+    try {
+      const dateFrom = exportDate + "T00:00:00";
+      const nextDay = new Date(exportDate);
+      nextDay.setDate(nextDay.getDate() + 1);
+      const dateTo = nextDay.toISOString().split("T")[0] + "T00:00:00";
+
+      const params = new URLSearchParams({
+        dateFrom,
+        dateTo,
+        limit: "200",
+      });
+
+      const res = await fetch(`/api/tasks?${params}`);
+      const data = await res.json();
+      const tasks: ExportTask[] = (data.tasks || []).filter(
+        (t: ExportTask) => t.proofUrl && t.proofUrl.trim() !== ""
+      );
+
+      if (tasks.length === 0) {
+        setExportProgress("No tasks with images found for this date.");
+        setTimeout(() => setExportProgress(""), 3000);
+        setExporting(false);
+        return;
+      }
+
+      const zip = new JSZip();
+      const clientFolders: Record<string, JSZip> = {};
+      const nameCounters: Record<string, number> = {};
+
+      let downloaded = 0;
+      for (const task of tasks) {
+        const folderName = sanitizeName(task.clientName || "Unknown_Client");
+        if (!clientFolders[folderName]) {
+          clientFolders[folderName] = zip.folder(folderName)!;
+        }
+
+        const baseName = sanitizeName(task.title || `task_${task.id}`);
+        const ext = getExtFromUrl(task.proofUrl);
+
+        // Handle duplicate filenames
+        const key = folderName + "/" + baseName + ext;
+        if (nameCounters[key] !== undefined) {
+          nameCounters[key]++;
+        } else {
+          nameCounters[key] = 0;
+        }
+        const suffix = nameCounters[key] > 0 ? `_${nameCounters[key]}` : "";
+        const fileName = `${baseName}${suffix}${ext}`;
+
+        setExportProgress(`Downloading ${downloaded + 1}/${tasks.length}: ${task.title}`);
+
+        try {
+          const imgRes = await fetch(task.proofUrl);
+          if (imgRes.ok) {
+            const blob = await imgRes.blob();
+            clientFolders[folderName].file(fileName, blob);
+          }
+        } catch {
+          // Skip failed downloads
+        }
+        downloaded++;
+      }
+
+      setExportProgress("Creating ZIP file...");
+      const content = await zip.generateAsync({ type: "blob" });
+
+      // Trigger download
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(content);
+      link.download = `Client_Work_${exportDate}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+
+      setExportProgress(`Done! ${downloaded} files exported.`);
+      setTimeout(() => setExportProgress(""), 4000);
+    } catch (err) {
+      console.error(err);
+      setExportProgress("Export failed. Please try again.");
+      setTimeout(() => setExportProgress(""), 3000);
+    } finally {
+      setExporting(false);
+    }
+  }, [exportDate]);
 
   const statCards = [
     { label: "Total Tasks", value: stats?.total ?? 0, color: "from-blue-500/20 to-blue-600/20", textColor: "text-blue-400", icon: "📋" },
@@ -97,6 +216,52 @@ export default function AdminDashboard() {
           ))}
         </div>
       )}
+
+      {/* Daily Work Export */}
+      <div className="glass-card p-6 mb-8">
+        <h2 className="text-lg font-semibold text-text-primary mb-4 flex items-center gap-2">
+          <svg className="w-5 h-5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+          </svg>
+          Daily Work Export
+        </h2>
+        <p className="text-sm text-text-secondary mb-4">
+          Download all proof images for a specific day, organized by client folders in a ZIP file.
+        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <input
+            type="date"
+            value={exportDate}
+            onChange={(e) => setExportDate(e.target.value)}
+            className="input-glass text-sm py-2.5 px-4 w-auto"
+          />
+          <button
+            onClick={handleExport}
+            disabled={exporting}
+            className="px-5 py-2.5 rounded-xl text-sm font-medium transition-all bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-emerald-400 border border-emerald-500/20 hover:from-emerald-500/30 hover:to-teal-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {exporting ? (
+              <>
+                <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Exporting...
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                </svg>
+                Download ZIP
+              </>
+            )}
+          </button>
+          {exportProgress && (
+            <span className="text-sm text-text-muted animate-pulse">{exportProgress}</span>
+          )}
+        </div>
+      </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Employee Performance */}

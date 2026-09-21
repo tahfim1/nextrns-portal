@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
     const clientId = searchParams.get("clientId");
     const userId = searchParams.get("userId");
     const dateFrom = searchParams.get("dateFrom");
+    const dateTo = searchParams.get("dateTo");
     const offset = (page - 1) * limit;
 
     const conditions = [];
@@ -39,6 +40,11 @@ export async function GET(request: NextRequest) {
 
     if (dateFrom) {
       conditions.push(gte(tasks.submittedAt, new Date(dateFrom)));
+    }
+
+    if (dateTo) {
+      const { lte } = await import("drizzle-orm");
+      conditions.push(lte(tasks.submittedAt, new Date(dateTo)));
     }
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
