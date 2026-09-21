@@ -99,6 +99,7 @@ export default function AdminTasksPage() {
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString("en-US", {
+      timeZone: "Asia/Dhaka",
       month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit",
     });
   };

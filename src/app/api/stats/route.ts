@@ -1,8 +1,27 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { tasks, users } from "@/db/schema";
-import { sql, desc, eq, gte, and } from "drizzle-orm";
+import { sql, desc, eq, gte, lte, and } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
+
+// Get current date boundaries in BD time (UTC+6)
+function getBDToday() {
+  const now = new Date();
+  // Format current time in BD timezone to get the BD date
+  const bdDateStr = now.toLocaleDateString("en-CA", { timeZone: "Asia/Dhaka" }); // YYYY-MM-DD
+  const bdStart = new Date(`${bdDateStr}T00:00:00+06:00`);
+  const bdEnd = new Date(bdStart.getTime() + 24 * 60 * 60 * 1000);
+  return { bdStart, bdEnd, bdDateStr };
+}
+
+function getBDWeekStart() {
+  const now = new Date();
+  const bdDateStr = now.toLocaleDateString("en-CA", { timeZone: "Asia/Dhaka" });
+  const bdNow = new Date(`${bdDateStr}T00:00:00+06:00`);
+  const day = bdNow.getDay();
+  const weekStart = new Date(bdNow.getTime() - day * 24 * 60 * 60 * 1000);
+  return weekStart;
+}
 
 export async function GET() {
   try {
@@ -11,63 +30,70 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const weekStart = new Date(todayStart);
-    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const { bdStart, bdEnd, bdDateStr } = getBDToday();
+    const weekStart = getBDWeekStart();
 
-    // Total stats
-    const [totalTasks] = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(tasks);
-
-    const [todayTasks] = await db
+    // Today's stats (BD time)
+    const [todayTotal] = await db
       .select({ count: sql<number>`count(*)` })
       .from(tasks)
-      .where(gte(tasks.submittedAt, todayStart));
+      .where(and(gte(tasks.submittedAt, bdStart), lte(tasks.submittedAt, bdEnd)));
 
+    const [todayPending] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(tasks)
+      .where(
+        and(
+          gte(tasks.submittedAt, bdStart),
+          lte(tasks.submittedAt, bdEnd),
+          eq(tasks.status, "submitted")
+        )
+      );
+
+    const [todayApproved] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(tasks)
+      .where(
+        and(
+          gte(tasks.submittedAt, bdStart),
+          lte(tasks.submittedAt, bdEnd),
+          eq(tasks.status, "approved")
+        )
+      );
+
+    const [todayRejected] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(tasks)
+      .where(
+        and(
+          gte(tasks.submittedAt, bdStart),
+          lte(tasks.submittedAt, bdEnd),
+          eq(tasks.status, "rejected")
+        )
+      );
+
+    // This week's total (for employee stats)
     const [weekTasks] = await db
       .select({ count: sql<number>`count(*)` })
       .from(tasks)
       .where(gte(tasks.submittedAt, weekStart));
 
-    const [monthTasks] = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(tasks)
-      .where(gte(tasks.submittedAt, monthStart));
-
-    const [pendingTasks] = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(tasks)
-      .where(eq(tasks.status, "submitted"));
-
-    const [approvedTasks] = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(tasks)
-      .where(eq(tasks.status, "approved"));
-
-    const [rejectedTasks] = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(tasks)
-      .where(eq(tasks.status, "rejected"));
-
-    // Per-employee stats
+    // Per-employee stats (today focused)
     const employeeStats = await db
       .select({
         userId: users.id,
         displayName: users.displayName,
         avatarColor: users.avatarColor,
-        totalTasks: sql<number>`count(${tasks.id})`,
+        todayTasks: sql<number>`count(case when ${tasks.submittedAt} >= ${bdStart} and ${tasks.submittedAt} < ${bdEnd} then 1 end)`,
         weekTasks: sql<number>`count(case when ${tasks.submittedAt} >= ${weekStart} then 1 end)`,
       })
       .from(users)
       .leftJoin(tasks, eq(users.id, tasks.userId))
       .where(eq(users.role, "employee"))
       .groupBy(users.id, users.displayName, users.avatarColor)
-      .orderBy(sql`count(${tasks.id}) desc`);
+      .orderBy(sql`count(case when ${tasks.submittedAt} >= ${bdStart} and ${tasks.submittedAt} < ${bdEnd} then 1 end) desc`);
 
-    // Recent activity
+    // Recent activity (today only)
     const recentActivity = await db
       .select({
         id: tasks.id,
@@ -79,19 +105,19 @@ export async function GET() {
       })
       .from(tasks)
       .leftJoin(users, eq(tasks.userId, users.id))
+      .where(and(gte(tasks.submittedAt, bdStart), lte(tasks.submittedAt, bdEnd)))
       .orderBy(desc(tasks.submittedAt))
-      .limit(10);
+      .limit(20);
 
     return NextResponse.json({
       stats: {
-        total: Number(totalTasks.count),
-        today: Number(todayTasks.count),
+        todayTotal: Number(todayTotal.count),
+        todayPending: Number(todayPending.count),
+        todayApproved: Number(todayApproved.count),
+        todayRejected: Number(todayRejected.count),
         thisWeek: Number(weekTasks.count),
-        thisMonth: Number(monthTasks.count),
-        pending: Number(pendingTasks.count),
-        approved: Number(approvedTasks.count),
-        rejected: Number(rejectedTasks.count),
       },
+      bdDate: bdDateStr,
       employeeStats,
       recentActivity,
     });

@@ -1,23 +1,23 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import JSZip from "jszip";
+import { useAdminToast } from "./layout";
 
 interface Stats {
-  total: number;
-  today: number;
+  todayTotal: number;
+  todayPending: number;
+  todayApproved: number;
+  todayRejected: number;
   thisWeek: number;
-  thisMonth: number;
-  pending: number;
-  approved: number;
-  rejected: number;
 }
 
 interface EmployeeStat {
   userId: number;
   displayName: string;
   avatarColor: string;
-  totalTasks: number;
+  todayTasks: number;
   weekTasks: number;
 }
 
@@ -40,23 +40,42 @@ interface ExportTask {
   userName: string;
 }
 
+const BD_TZ = "Asia/Dhaka";
+
+function formatBDTime(dateStr: string) {
+  return new Date(dateStr).toLocaleTimeString("en-US", {
+    timeZone: BD_TZ,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
 export default function AdminDashboard() {
+  const router = useRouter();
+  const { showToast } = useAdminToast();
   const [stats, setStats] = useState<Stats | null>(null);
+  const [bdDate, setBdDate] = useState("");
   const [employeeStats, setEmployeeStats] = useState<EmployeeStat[]>([]);
   const [recentActivity, setRecentActivity] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [approving, setApproving] = useState(false);
+
+  // Export state
   const [exportDate, setExportDate] = useState(() => {
     const now = new Date();
-    return now.toISOString().split("T")[0];
+    return now.toLocaleDateString("en-CA", { timeZone: BD_TZ });
   });
   const [exporting, setExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState("");
 
-  useEffect(() => {
+  const fetchStats = useCallback(() => {
+    setLoading(true);
     fetch("/api/stats")
       .then((r) => r.json())
       .then((data) => {
         setStats(data.stats);
+        setBdDate(data.bdDate || "");
         setEmployeeStats(data.employeeStats || []);
         setRecentActivity(data.recentActivity || []);
       })
@@ -64,20 +83,36 @@ export default function AdminDashboard() {
       .finally(() => setLoading(false));
   }, []);
 
-  const formatTimeAgo = (dateStr: string) => {
-    const d = new Date(dateStr);
-    const now = new Date();
-    const diff = now.getTime() - d.getTime();
-    const mins = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
-    if (mins < 1) return "Just now";
-    if (mins < 60) return `${mins}m ago`;
-    if (hours < 24) return `${hours}h ago`;
-    if (days < 7) return `${days}d ago`;
-    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
+
+  const handleApproveAll = async () => {
+    if (!stats || stats.todayPending === 0) return;
+    if (!confirm(`Approve all ${stats.todayPending} pending tasks?`)) return;
+
+    setApproving(true);
+    try {
+      const res = await fetch("/api/tasks/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "approve" }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast(`Approved ${data.count} tasks!`, "success");
+        fetchStats();
+      } else {
+        showToast(data.error || "Failed to approve", "error");
+      }
+    } catch {
+      showToast("Something went wrong", "error");
+    } finally {
+      setApproving(false);
+    }
   };
 
+  // ZIP Export logic
   const sanitizeName = (name: string) =>
     name.replace(/[<>:"/\\|?*]/g, "").replace(/&/g, "and").replace(/\s+/g, "_").substring(0, 60);
 
@@ -95,14 +130,12 @@ export default function AdminDashboard() {
     setExportProgress("Fetching tasks...");
 
     try {
-      const dateFrom = exportDate + "T00:00:00";
-      const nextDay = new Date(exportDate);
-      nextDay.setDate(nextDay.getDate() + 1);
-      const dateTo = nextDay.toISOString().split("T")[0] + "T00:00:00";
+      const bdStart = new Date(`${exportDate}T00:00:00+06:00`);
+      const bdEnd = new Date(bdStart.getTime() + 24 * 60 * 60 * 1000);
 
       const params = new URLSearchParams({
-        dateFrom,
-        dateTo,
+        dateFrom: bdStart.toISOString(),
+        dateTo: bdEnd.toISOString(),
         limit: "200",
       });
 
@@ -133,7 +166,6 @@ export default function AdminDashboard() {
         const baseName = sanitizeName(task.title || `task_${task.id}`);
         const ext = getExtFromUrl(task.proofUrl);
 
-        // Handle duplicate filenames
         const key = folderName + "/" + baseName + ext;
         if (nameCounters[key] !== undefined) {
           nameCounters[key]++;
@@ -160,7 +192,6 @@ export default function AdminDashboard() {
       setExportProgress("Creating ZIP file...");
       const content = await zip.generateAsync({ type: "blob" });
 
-      // Trigger download
       const link = document.createElement("a");
       link.href = URL.createObjectURL(content);
       link.download = `Client_Work_${exportDate}.zip`;
@@ -181,38 +212,104 @@ export default function AdminDashboard() {
   }, [exportDate]);
 
   const statCards = [
-    { label: "Total Tasks", value: stats?.total ?? 0, color: "from-blue-500/20 to-blue-600/20", textColor: "text-blue-400", icon: "📋" },
-    { label: "Today", value: stats?.today ?? 0, color: "from-violet-500/20 to-violet-600/20", textColor: "text-violet-400", icon: "📅" },
-    { label: "This Week", value: stats?.thisWeek ?? 0, color: "from-cyan-500/20 to-cyan-600/20", textColor: "text-cyan-400", icon: "📊" },
-    { label: "This Month", value: stats?.thisMonth ?? 0, color: "from-pink-500/20 to-pink-600/20", textColor: "text-pink-400", icon: "📈" },
-    { label: "Pending", value: stats?.pending ?? 0, color: "from-amber-500/20 to-amber-600/20", textColor: "text-amber-400", icon: "⏳" },
-    { label: "Approved", value: stats?.approved ?? 0, color: "from-green-500/20 to-green-600/20", textColor: "text-green-400", icon: "✅" },
-    { label: "Rejected", value: stats?.rejected ?? 0, color: "from-red-500/20 to-red-600/20", textColor: "text-red-400", icon: "❌" },
+    {
+      label: "Today's Tasks",
+      value: stats?.todayTotal ?? 0,
+      textColor: "text-blue-400",
+      icon: "\ud83d\udccb",
+      href: "/admin/tasks",
+    },
+    {
+      label: "Pending",
+      value: stats?.todayPending ?? 0,
+      textColor: "text-amber-400",
+      icon: "\u23f3",
+      href: "/admin/tasks?status=submitted",
+    },
+    {
+      label: "Approved",
+      value: stats?.todayApproved ?? 0,
+      textColor: "text-green-400",
+      icon: "\u2705",
+      href: "/admin/tasks?status=approved",
+    },
+    {
+      label: "Rejected",
+      value: stats?.todayRejected ?? 0,
+      textColor: "text-red-400",
+      icon: "\u274c",
+      href: "/admin/tasks?status=rejected",
+    },
   ];
+
+  const formattedBdDate = bdDate
+    ? new Date(`${bdDate}T00:00:00+06:00`).toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+        timeZone: BD_TZ,
+      })
+    : "";
 
   return (
     <div className="max-w-7xl mx-auto fade-in">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl lg:text-3xl font-bold text-text-primary mb-2">Admin Dashboard</h1>
-        <p className="text-text-secondary">Overview of all employee activities</p>
+      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl lg:text-3xl font-bold text-text-primary mb-1">Admin Dashboard</h1>
+          <p className="text-text-secondary">
+            {formattedBdDate && (
+              <span className="text-amber-400 font-medium">{formattedBdDate}</span>
+            )}
+            {" \u00b7 "}Bangladesh Time
+          </p>
+        </div>
+        {stats && stats.todayPending > 0 && (
+          <button
+            onClick={handleApproveAll}
+            disabled={approving}
+            className="px-5 py-2.5 rounded-xl text-sm font-medium transition-all bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-400 border border-green-500/20 hover:from-green-500/30 hover:to-emerald-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {approving ? (
+              <>
+                <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Approving...
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Approve All ({stats.todayPending})
+              </>
+            )}
+          </button>
+        )}
       </div>
 
       {/* Stats Grid */}
       {loading ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+          {[1, 2, 3, 4].map((i) => (
             <div key={i} className="shimmer h-32 rounded-2xl" />
           ))}
         </div>
       ) : (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8 stagger-children">
           {statCards.map((stat) => (
-            <div key={stat.label} className="stat-card">
+            <button
+              key={stat.label}
+              onClick={() => router.push(stat.href)}
+              className="stat-card text-left cursor-pointer hover:scale-[1.02] transition-transform"
+            >
               <div className="text-2xl mb-2">{stat.icon}</div>
               <p className={`text-3xl font-bold ${stat.textColor}`}>{stat.value}</p>
               <p className="text-sm text-text-muted mt-1">{stat.label}</p>
-            </div>
+            </button>
           ))}
         </div>
       )}
@@ -264,13 +361,13 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
-        {/* Employee Performance */}
+        {/* Employee Performance (Today) */}
         <div className="glass-card p-6">
           <h2 className="text-lg font-semibold text-text-primary mb-4 flex items-center gap-2">
             <svg className="w-5 h-5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
             </svg>
-            Employee Performance
+            Today&apos;s Employee Activity
           </h2>
           {loading ? (
             <div className="space-y-3">
@@ -294,8 +391,8 @@ export default function AdminDashboard() {
                     <p className="text-xs text-text-muted">{emp.weekTasks} this week</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-bold text-text-primary">{emp.totalTasks}</p>
-                    <p className="text-xs text-text-muted">total</p>
+                    <p className="text-lg font-bold text-text-primary">{emp.todayTasks}</p>
+                    <p className="text-xs text-text-muted">today</p>
                   </div>
                 </div>
               ))}
@@ -303,20 +400,20 @@ export default function AdminDashboard() {
           )}
         </div>
 
-        {/* Recent Activity */}
+        {/* Today's Activity Feed */}
         <div className="glass-card p-6">
           <h2 className="text-lg font-semibold text-text-primary mb-4 flex items-center gap-2">
             <svg className="w-5 h-5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            Recent Activity
+            Today&apos;s Activity
           </h2>
           {loading ? (
             <div className="space-y-3">
               {[1, 2, 3, 4, 5].map((i) => <div key={i} className="shimmer h-14 rounded-xl" />)}
             </div>
           ) : recentActivity.length === 0 ? (
-            <p className="text-text-muted text-sm text-center py-8">No activity yet</p>
+            <p className="text-text-muted text-sm text-center py-8">No activity today</p>
           ) : (
             <div className="space-y-3">
               {recentActivity.map((activity) => (
@@ -333,7 +430,7 @@ export default function AdminDashboard() {
                       <span className="text-text-secondary">submitted</span>{" "}
                       <span className="font-medium">{activity.title}</span>
                     </p>
-                    <p className="text-xs text-text-muted">{formatTimeAgo(activity.submittedAt)}</p>
+                    <p className="text-xs text-text-muted">{formatBDTime(activity.submittedAt)}</p>
                   </div>
                   <span className={`badge badge-${activity.status} flex-shrink-0`}>{activity.status}</span>
                 </div>
