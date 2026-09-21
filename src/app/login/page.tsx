@@ -83,7 +83,7 @@ export default function LoginPage() {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="input-glass pl-12"
+                  className="input-glass !pl-12"
                   placeholder="Enter your username"
                   required
                   autoComplete="username"
@@ -108,7 +108,7 @@ export default function LoginPage() {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="input-glass pl-12 pr-12"
+                  className="input-glass !pl-12 !pr-12"
                   placeholder="Enter your password"
                   required
                   autoComplete="current-password"

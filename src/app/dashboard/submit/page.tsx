@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "../layout";
+import imageCompression from "browser-image-compression";
 
 interface ClientOption {
   id: number;
@@ -34,15 +35,42 @@ export default function SubmitTaskPage() {
       .catch(console.error);
   }, []);
 
-  const handleFileSelect = (selectedFile: File) => {
-    if (selectedFile.size > 4.5 * 1024 * 1024) {
-      showToast("File too large. Maximum size is 4.5MB.", "error");
-      return;
+  const handleFileSelect = async (selectedFile: File) => {
+    try {
+      let fileToUse = selectedFile;
+      
+      // Compress if larger than 1MB
+      if (selectedFile.size > 1024 * 1024) {
+        showToast("Compressing image...", "info");
+        const options = {
+          maxSizeMB: 1,
+          maxWidthOrHeight: 1920,
+          useWebWorker: true,
+        };
+        fileToUse = await imageCompression(selectedFile, options);
+      } else if (selectedFile.size > 4.5 * 1024 * 1024) {
+        showToast("File too large. Maximum size is 4.5MB.", "error");
+        return;
+      }
+
+      setFile(fileToUse);
+      const reader = new FileReader();
+      reader.onload = () => setFilePreview(reader.result as string);
+      reader.readAsDataURL(fileToUse);
+    } catch (error) {
+      console.error("Compression error:", error);
+      showToast("Error processing image. Trying original...", "error");
+      
+      // Fallback to original
+      if (selectedFile.size > 4.5 * 1024 * 1024) {
+        showToast("File too large. Maximum size is 4.5MB.", "error");
+        return;
+      }
+      setFile(selectedFile);
+      const reader = new FileReader();
+      reader.onload = () => setFilePreview(reader.result as string);
+      reader.readAsDataURL(selectedFile);
     }
-    setFile(selectedFile);
-    const reader = new FileReader();
-    reader.onload = () => setFilePreview(reader.result as string);
-    reader.readAsDataURL(selectedFile);
   };
 
   const handleDrop = useCallback((e: React.DragEvent) => {
