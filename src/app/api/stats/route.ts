@@ -4,11 +4,8 @@ import { tasks, users } from "@/db/schema";
 import { sql, desc, eq, gte, lte, and } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
 
-// Get current date boundaries in BD time (UTC+6)
-function getBDToday() {
-  const now = new Date();
-  // Format current time in BD timezone to get the BD date
-  const bdDateStr = now.toLocaleDateString("en-CA", { timeZone: "Asia/Dhaka" }); // YYYY-MM-DD
+function getBDToday(customDate?: string) {
+  const bdDateStr = customDate || new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Dhaka" }); // YYYY-MM-DD
   const bdStart = new Date(`${bdDateStr}T00:00:00+06:00`);
   const bdEnd = new Date(bdStart.getTime() + 24 * 60 * 60 * 1000);
   return { bdStart, bdEnd, bdDateStr };
@@ -23,14 +20,17 @@ function getBDWeekStart() {
   return weekStart;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const url = new URL(request.url);
+    const dateParam = url.searchParams.get("date");
+
     const session = await getSession();
     if (!session || session.role !== "admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    const { bdStart, bdEnd, bdDateStr } = getBDToday();
+    const { bdStart, bdEnd, bdDateStr } = getBDToday(dateParam || undefined);
     const weekStart = getBDWeekStart();
 
     // Today's stats (BD time)
