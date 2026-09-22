@@ -171,14 +171,16 @@ export default function HistoryPage() {
                       </div>
                     )}
                     {task.proofUrl && task.proofUrl.length > 0 && (
-                      <div className="w-full">
-                        <a href={task.proofUrl} target="_blank" rel="noopener noreferrer">
-                          <img
-                            src={task.proofUrl}
-                            alt="Task proof"
-                            className="rounded-xl max-h-64 object-contain border border-glass-border hover:opacity-90 transition-opacity"
-                          />
-                        </a>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 w-full">
+                        {task.proofUrl.split(',').map((url, idx) => (
+                          <a key={idx} href={url} target="_blank" rel="noopener noreferrer">
+                            <img
+                              src={url}
+                              alt={`Task proof ${idx + 1}`}
+                              className="rounded-xl w-full aspect-video object-cover border border-glass-border hover:opacity-90 transition-opacity"
+                            />
+                          </a>
+                        ))}
                       </div>
                     )}
                     {(!task.proofUrl || task.proofUrl.length === 0) && !task.proofLink && (

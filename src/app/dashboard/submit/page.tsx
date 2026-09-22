@@ -16,8 +16,8 @@ interface TaskEntry {
   description: string;
   clientId: string;
   proofLink: string;
-  file: File | null;
-  filePreview: string | null;
+  files: File[];
+  filePreviews: string[];
   dragover: boolean;
 }
 
@@ -35,8 +35,8 @@ export default function SubmitTaskPage() {
     description: "",
     clientId: "",
     proofLink: "",
-    file: null,
-    filePreview: null,
+    files: [],
+    filePreviews: [],
     dragover: false,
   }]);
   
@@ -62,10 +62,10 @@ export default function SubmitTaskPage() {
       id: Date.now().toString(),
       title: "",
       description: "",
-      clientId: tasks.length > 0 ? tasks[tasks.length - 1].clientId : "", // inherit previous client for convenience
+      clientId: tasks.length > 0 ? tasks[tasks.length - 1].clientId : "", 
       proofLink: "",
-      file: null,
-      filePreview: null,
+      files: [],
+      filePreviews: [],
       dragover: false,
     }]);
   };
@@ -76,56 +76,82 @@ export default function SubmitTaskPage() {
     }
   };
 
-  const handleFileSelect = useCallback(async (index: number, selectedFile: File) => {
-    try {
-      let fileToUse = selectedFile;
-      
-      // Compress if larger than 1MB
-      if (selectedFile.size > 1024 * 1024) {
-        showToast("Compressing image...", "info");
-        const options = {
-          maxSizeMB: 1,
-          maxWidthOrHeight: 1920,
-          useWebWorker: true,
-        };
-        fileToUse = await imageCompression(selectedFile, options);
-      } else if (selectedFile.size > 4.5 * 1024 * 1024) {
-        showToast("File too large. Maximum size is 4.5MB.", "error");
-        return;
+  const handleFilesSelect = useCallback(async (index: number, selectedFiles: FileList | File[]) => {
+    const currentTask = tasks[index];
+    const newFiles = [...currentTask.files];
+    const newPreviews = [...currentTask.filePreviews];
+
+    for (let i = 0; i < selectedFiles.length; i++) {
+      const selectedFile = selectedFiles[i];
+      if (!selectedFile.type.startsWith("image/")) {
+        showToast(`Skipped ${selectedFile.name} (Not an image)`, "info");
+        continue;
       }
 
-      const reader = new FileReader();
-      reader.onload = () => {
-        updateTask(index, { file: fileToUse, filePreview: reader.result as string });
-      };
-      reader.readAsDataURL(fileToUse);
-    } catch (error) {
-      console.error("Compression error:", error);
-      showToast("Error processing image. Trying original...", "error");
-      
-      // Fallback to original
-      if (selectedFile.size > 4.5 * 1024 * 1024) {
-        showToast("File too large. Maximum size is 4.5MB.", "error");
-        return;
+      try {
+        let fileToUse = selectedFile;
+        
+        if (selectedFile.size > 1024 * 1024) {
+          showToast(`Compressing ${selectedFile.name}...`, "info");
+          const options = {
+            maxSizeMB: 1,
+            maxWidthOrHeight: 1920,
+            useWebWorker: true,
+          };
+          fileToUse = await imageCompression(selectedFile, options);
+        } else if (selectedFile.size > 10 * 1024 * 1024) {
+          showToast(`File ${selectedFile.name} is too large. Maximum size is 10MB.`, "error");
+          continue;
+        }
+
+        const previewUrl = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(fileToUse);
+        });
+
+        newFiles.push(fileToUse);
+        newPreviews.push(previewUrl);
+
+      } catch (error) {
+        console.error("Compression error:", error);
+        if (selectedFile.size > 10 * 1024 * 1024) {
+          showToast(`File ${selectedFile.name} too large.`, "error");
+          continue;
+        }
+        
+        const previewUrl = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(selectedFile);
+        });
+
+        newFiles.push(selectedFile);
+        newPreviews.push(previewUrl);
       }
-      const reader = new FileReader();
-      reader.onload = () => {
-        updateTask(index, { file: selectedFile, filePreview: reader.result as string });
-      };
-      reader.readAsDataURL(selectedFile);
     }
+
+    updateTask(index, { files: newFiles, filePreviews: newPreviews });
   }, [tasks, showToast]);
 
   const handleDrop = useCallback((e: React.DragEvent, index: number) => {
     e.preventDefault();
     updateTask(index, { dragover: false });
-    const droppedFile = e.dataTransfer.files[0];
-    if (droppedFile && droppedFile.type.startsWith("image/")) {
-      handleFileSelect(index, droppedFile);
-    } else {
-      showToast("Please drop an image file", "error");
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFilesSelect(index, e.dataTransfer.files);
     }
-  }, [handleFileSelect]);
+  }, [handleFilesSelect]);
+
+  const removeFile = (taskIndex: number, fileIndex: number) => {
+    const currentTask = tasks[taskIndex];
+    const newFiles = [...currentTask.files];
+    const newPreviews = [...currentTask.filePreviews];
+    
+    newFiles.splice(fileIndex, 1);
+    newPreviews.splice(fileIndex, 1);
+    
+    updateTask(taskIndex, { files: newFiles, filePreviews: newPreviews });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -142,27 +168,31 @@ export default function SubmitTaskPage() {
     try {
       setUploading(true);
       
-      // Upload all files concurrently
-      const uploadPromises = tasks.map(async (t) => {
-        if (!t.file) return null;
+      // We will create an array of promises, each returning a comma-separated string of uploaded URLs for that task.
+      const taskUrlsPromises = tasks.map(async (t) => {
+        if (t.files.length === 0) return "";
         
-        const formData = new FormData();
-        formData.append("file", t.file);
+        const fileUrls: string[] = [];
+        for (const file of t.files) {
+          const formData = new FormData();
+          formData.append("file", file);
 
-        const uploadRes = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        });
+          const uploadRes = await fetch("/api/upload", {
+            method: "POST",
+            body: formData,
+          });
 
-        if (!uploadRes.ok) {
-          throw new Error("Upload failed for one or more files");
+          if (!uploadRes.ok) {
+            throw new Error(`Upload failed for file ${file.name}`);
+          }
+
+          const uploadData = await uploadRes.json();
+          fileUrls.push(uploadData.url);
         }
-
-        const uploadData = await uploadRes.json();
-        return uploadData.url;
+        return fileUrls.join(",");
       });
 
-      const uploadedUrls = await Promise.all(uploadPromises);
+      const uploadedUrlsArray = await Promise.all(taskUrlsPromises);
       setUploading(false);
 
       // Prepare payload
@@ -170,8 +200,8 @@ export default function SubmitTaskPage() {
         title: t.title,
         description: t.description,
         clientId: t.clientId,
-        proofType: t.file ? "screenshot" : (t.proofLink ? "link" : "screenshot"),
-        proofUrl: uploadedUrls[index] || "",
+        proofType: t.files.length > 0 ? "screenshot" : (t.proofLink ? "link" : "screenshot"),
+        proofUrl: uploadedUrlsArray[index] || "",
         proofLink: t.proofLink,
       }));
 
@@ -231,7 +261,7 @@ export default function SubmitTaskPage() {
           Back
         </button>
         <h1 className="text-2xl lg:text-3xl font-bold text-text-primary mb-2">Submit New Tasks</h1>
-        <p className="text-text-secondary">Document your completed work with proof. You can add multiple tasks at once!</p>
+        <p className="text-text-secondary">Upload images and document your completed work. You can add multiple tasks at once!</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
@@ -251,13 +281,89 @@ export default function SubmitTaskPage() {
             )}
             
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-sm">
+              <div className="w-8 h-8 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-sm flex-shrink-0">
                 {index + 1}
               </div>
               <h2 className="text-lg font-semibold text-text-primary">Task Details</h2>
             </div>
 
             <div className="space-y-6">
+              
+              {/* Image Upload Area (Moved to top as primary action) */}
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-3">
+                  Upload Proof Images <span className="text-text-muted">(Optional, but recommended)</span>
+                </label>
+                <div
+                  className={`upload-zone p-8 ${task.dragover ? "dragover" : ""}`}
+                  onDragOver={(e) => { e.preventDefault(); updateTask(index, { dragover: true }); }}
+                  onDragLeave={() => updateTask(index, { dragover: false })}
+                  onDrop={(e) => handleDrop(e, index)}
+                  onClick={() => {
+                    if (fileInputRefs.current[index]) {
+                      fileInputRefs.current[index]!.click();
+                    }
+                  }}
+                  onPaste={(e) => {
+                    const items = e.clipboardData?.items;
+                    if (!items) return;
+                    const pastedFiles: File[] = [];
+                    for (let i = 0; i < items.length; i++) {
+                      if (items[i].type.indexOf("image") !== -1) {
+                        const file = items[i].getAsFile();
+                        if (file) pastedFiles.push(file);
+                      }
+                    }
+                    if (pastedFiles.length > 0) {
+                      e.preventDefault();
+                      handleFilesSelect(index, pastedFiles);
+                    }
+                  }}
+                  tabIndex={0}
+                >
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-violet-500/10 flex items-center justify-center">
+                    <svg className="w-8 h-8 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                    </svg>
+                  </div>
+                  <p className="text-text-primary font-medium mb-1 text-lg">Drop your images here</p>
+                  <p className="text-text-muted text-sm">or click to browse • Paste (Ctrl+V) anywhere here • Multiple allowed</p>
+                </div>
+                <input
+                  ref={(el) => {
+                    fileInputRefs.current[index] = el;
+                  }}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    if (e.target.files) handleFilesSelect(index, e.target.files);
+                  }}
+                />
+
+                {/* Grid of uploaded images */}
+                {task.filePreviews.length > 0 && (
+                  <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    {task.filePreviews.map((preview, fileIndex) => (
+                      <div key={fileIndex} className="relative group rounded-xl overflow-hidden border border-glass-border aspect-square bg-navy-900/50">
+                        <img src={preview} alt="Preview" className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeFile(index, fileIndex);
+                          }}
+                          className="absolute top-2 right-2 w-7 h-7 rounded-full bg-red-500/90 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               {/* Client Selection */}
               <div>
                 <label className="block text-sm font-medium text-text-secondary mb-2">
@@ -286,7 +392,7 @@ export default function SubmitTaskPage() {
                   value={task.title}
                   onChange={(e) => updateTask(index, { title: e.target.value })}
                   className="input-glass"
-                  placeholder="e.g., Created social media post for Leo Bar"
+                  placeholder="e.g., Created 3 social media posts for Leo Bar"
                   required
                   maxLength={300}
                 />
@@ -306,86 +412,13 @@ export default function SubmitTaskPage() {
                 />
               </div>
 
-              {/* Screenshot Input */}
-              <div>
-                <label className="block text-sm font-medium text-text-secondary mb-3">
-                  Upload Screenshot <span className="text-text-muted">(optional)</span>
-                </label>
-                <div
-                  className={`upload-zone ${task.dragover ? "dragover" : ""}`}
-                  onDragOver={(e) => { e.preventDefault(); updateTask(index, { dragover: true }); }}
-                  onDragLeave={() => updateTask(index, { dragover: false })}
-                  onDrop={(e) => handleDrop(e, index)}
-                  onClick={() => {
-                    if (fileInputRefs.current[index]) {
-                      fileInputRefs.current[index]!.click();
-                    }
-                  }}
-                  onPaste={(e) => {
-                    const items = e.clipboardData?.items;
-                    if (!items) return;
-                    for (let i = 0; i < items.length; i++) {
-                      if (items[i].type.indexOf("image") !== -1) {
-                        const pastedFile = items[i].getAsFile();
-                        if (pastedFile) {
-                          handleFileSelect(index, pastedFile);
-                          e.preventDefault();
-                          break;
-                        }
-                      }
-                    }
-                  }}
-                  tabIndex={0} // Make focusable to receive paste events directly
-                >
-                  {task.filePreview ? (
-                    <div className="relative">
-                      <img
-                        src={task.filePreview}
-                        alt="Preview"
-                        className="max-h-48 mx-auto rounded-lg object-contain"
-                      />
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          updateTask(index, { file: null, filePreview: null });
-                        }}
-                        className="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-500/80 text-white flex items-center justify-center hover:bg-red-500 transition-colors"
-                      >
-                        ✕
-                      </button>
-                      <p className="text-xs text-text-muted mt-3">{task.file?.name} ({((task.file?.size || 0) / 1024 / 1024).toFixed(2)} MB)</p>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-violet-500/10 flex items-center justify-center">
-                        <svg className="w-8 h-8 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-                        </svg>
-                      </div>
-                      <p className="text-text-primary font-medium mb-1">Drop your screenshot here</p>
-                      <p className="text-text-muted text-sm">or click to browse • Click here then Paste (Ctrl+V) • Max 4.5MB</p>
-                    </>
-                  )}
-                </div>
-                <input
-                  ref={(el) => {
-                    fileInputRefs.current[index] = el;
-                  }}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) handleFileSelect(index, f);
-                  }}
-                />
-              </div>
-
-              {/* Link Input */}
-              <div>
-                <label className="block text-sm font-medium text-text-secondary mb-2">
-                  Proof Link <span className="text-text-muted">(optional)</span>
+              {/* Link Input (Alternative) */}
+              <div className="bg-glass/20 p-4 rounded-xl border border-glass-border">
+                <label className="block text-sm font-medium text-text-secondary mb-2 flex items-center gap-2">
+                  <svg className="w-4 h-4 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
+                  </svg>
+                  Alternative: Proof Link <span className="text-text-muted">(if images cannot be uploaded)</span>
                 </label>
                 <input
                   type="url"

@@ -256,10 +256,12 @@ export default function AdminTasksPage() {
                       </div>
                     )}
                     {task.proofUrl && task.proofUrl.length > 0 && (
-                      <div>
-                        <a href={task.proofUrl} target="_blank" rel="noopener noreferrer">
-                          <img src={task.proofUrl} alt="Screenshot Proof" className="rounded-xl max-h-64 object-contain border border-glass-border hover:opacity-90 transition-opacity" />
-                        </a>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        {task.proofUrl.split(',').map((url, idx) => (
+                          <a key={idx} href={url} target="_blank" rel="noopener noreferrer">
+                            <img src={url} alt={`Screenshot ${idx + 1}`} className="rounded-xl w-full aspect-video object-cover border border-glass-border hover:opacity-90 transition-opacity" />
+                          </a>
+                        ))}
                       </div>
                     )}
                     {(!task.proofUrl || task.proofUrl.length === 0) && !task.proofLink && (

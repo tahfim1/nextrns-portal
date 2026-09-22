@@ -51,8 +51,11 @@ export async function POST(request: NextRequest) {
         // Delete blobs
         const { del } = await import("@vercel/blob");
         for (const t of tasksToDelete) {
-          if (t.proofUrl && t.proofUrl.includes("public.blob.vercel-storage.com")) {
-            try { await del(t.proofUrl); } catch (e) { console.error("Blob delete error:", e); }
+          if (t.proofUrl) {
+            const urls = t.proofUrl.split(',').filter((u: string) => u.includes("public.blob.vercel-storage.com"));
+            if (urls.length > 0) {
+              try { await del(urls); } catch (e) { console.error("Blob delete error:", e); }
+            }
           }
         }
 
@@ -86,8 +89,11 @@ export async function POST(request: NextRequest) {
         // Delete blobs
         const { del } = await import("@vercel/blob");
         for (const t of tasksToDelete) {
-          if (t.proofUrl && t.proofUrl.includes("public.blob.vercel-storage.com")) {
-            try { await del(t.proofUrl); } catch (e) { console.error("Blob delete error:", e); }
+          if (t.proofUrl) {
+            const urls = t.proofUrl.split(',').filter((u: string) => u.includes("public.blob.vercel-storage.com"));
+            if (urls.length > 0) {
+              try { await del(urls); } catch (e) { console.error("Blob delete error:", e); }
+            }
           }
         }
 

@@ -205,27 +205,34 @@ export default function AdminDashboard() {
         }
 
         const baseName = sanitizeName(task.title || `task_${task.id}`);
-        const ext = getExtFromUrl(task.proofUrl);
+        const urls = task.proofUrl.split(',');
+        for (let i = 0; i < urls.length; i++) {
+          const url = urls[i].trim();
+          if (!url) continue;
 
-        const key = folderName + "/" + baseName + ext;
-        if (nameCounters[key] !== undefined) {
-          nameCounters[key]++;
-        } else {
-          nameCounters[key] = 0;
-        }
-        const suffix = nameCounters[key] > 0 ? `_${nameCounters[key]}` : "";
-        const fileName = `${baseName}${suffix}${ext}`;
-
-        setExportProgress(`Downloading ${downloaded + 1}/${tasks.length}: ${task.title}`);
-
-        try {
-          const imgRes = await fetch(task.proofUrl);
-          if (imgRes.ok) {
-            const blob = await imgRes.blob();
-            clientFolders[folderName].file(fileName, blob);
+          const ext = getExtFromUrl(url);
+          const multiSuffix = urls.length > 1 ? `_part${i + 1}` : "";
+          const key = folderName + "/" + baseName + multiSuffix + ext;
+          
+          if (nameCounters[key] !== undefined) {
+            nameCounters[key]++;
+          } else {
+            nameCounters[key] = 0;
           }
-        } catch {
-          // Skip failed downloads
+          const suffix = nameCounters[key] > 0 ? `_${nameCounters[key]}` : "";
+          const fileName = `${baseName}${multiSuffix}${suffix}${ext}`;
+
+          setExportProgress(`Downloading ${downloaded + 1}/${tasks.length}: ${task.title}${urls.length > 1 ? ` (Image ${i+1})` : ''}`);
+
+          try {
+            const imgRes = await fetch(url);
+            if (imgRes.ok) {
+              const blob = await imgRes.blob();
+              clientFolders[folderName].file(fileName, blob);
+            }
+          } catch {
+            // Skip failed downloads
+          }
         }
         downloaded++;
       }
@@ -684,14 +691,18 @@ export default function AdminDashboard() {
                 )}
 
                 {selectedTask.proofUrl && selectedTask.proofUrl.length > 0 && (
-                  <div className="rounded-xl overflow-hidden border border-glass-border bg-black/40">
-                    <a href={selectedTask.proofUrl} target="_blank" rel="noopener noreferrer">
-                      <img 
-                        src={selectedTask.proofUrl} 
-                        alt="Task Proof" 
-                        className="w-full object-contain max-h-[400px] hover:opacity-90 transition-opacity" 
-                      />
-                    </a>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {selectedTask.proofUrl.split(',').map((url, idx) => (
+                      <div key={idx} className="rounded-xl overflow-hidden border border-glass-border bg-black/40">
+                        <a href={url} target="_blank" rel="noopener noreferrer">
+                          <img 
+                            src={url} 
+                            alt={`Task Proof ${idx + 1}`} 
+                            className="w-full aspect-video object-cover hover:opacity-90 transition-opacity" 
+                          />
+                        </a>
+                      </div>
+                    ))}
                   </div>
                 )}
 
