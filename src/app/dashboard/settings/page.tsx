@@ -96,6 +96,13 @@ export default function SettingsPage() {
 
       if (!updateRes.ok) throw new Error("Failed to save profile picture");
 
+      const stored = sessionStorage.getItem("nextrns-user");
+      if (stored) {
+        const userObj = JSON.parse(stored);
+        userObj.profilePicture = uploadData.url;
+        sessionStorage.setItem("nextrns-user", JSON.stringify(userObj));
+      }
+
       showToast("Profile picture updated successfully! Refreshing...", "success");
       setTimeout(() => window.location.reload(), 1500);
     } catch (err: any) {
