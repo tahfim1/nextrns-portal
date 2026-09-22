@@ -109,14 +109,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { title, description, clientId, proofType, proofUrl, proofLink } =
-      await request.json();
+    const body = await request.json();
+    const tasksData = Array.isArray(body) ? body : [body];
 
-    if (!title || !clientId || !proofType) {
-      return NextResponse.json(
-        { error: "Title, client, and proof type are required" },
-        { status: 400 }
-      );
+    if (tasksData.length === 0) {
+      return NextResponse.json({ error: "No tasks provided" }, { status: 400 });
+    }
+
+    for (const t of tasksData) {
+      if (!t.title || !t.clientId || !t.proofType) {
+        return NextResponse.json(
+          { error: "Title, client, and proof type are required for all tasks" },
+          { status: 400 }
+        );
+      }
     }
 
     // Check auto approval setting
@@ -128,21 +134,23 @@ export async function POST(request: NextRequest) {
     
     const isAutoApprove = autoApprovalSetting.length > 0 && autoApprovalSetting[0].value === "true";
 
-    const newTask = await db
+    const insertValues = tasksData.map(t => ({
+      userId: session.userId,
+      clientId: parseInt(t.clientId),
+      title: t.title,
+      description: t.description || null,
+      proofType: t.proofType || "screenshot",
+      proofUrl: t.proofUrl || "",
+      proofLink: t.proofLink || null,
+      status: isAutoApprove ? "approved" : "submitted" as "approved" | "submitted",
+    }));
+
+    const newTasks = await db
       .insert(tasks)
-      .values({
-        userId: session.userId,
-        clientId: parseInt(clientId),
-        title,
-        description: description || null,
-        proofType: proofType || "screenshot",
-        proofUrl: proofUrl || "",
-        proofLink: proofLink || null,
-        status: isAutoApprove ? "approved" : "submitted",
-      })
+      .values(insertValues)
       .returning();
 
-    return NextResponse.json({ success: true, task: newTask[0] });
+    return NextResponse.json({ success: true, tasks: newTasks });
   } catch (error) {
     console.error("Create task error:", error);
     return NextResponse.json(
