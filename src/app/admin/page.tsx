@@ -437,6 +437,29 @@ export default function AdminDashboard() {
         </button>
       </div>
 
+      {/* Stats Grid */}
+      {loadingStats ? (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="shimmer h-32 rounded-2xl" />
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8 stagger-children">
+          {statCards.map((stat) => (
+            <button
+              key={stat.label}
+              onClick={() => router.push(stat.href)}
+              className="stat-card text-left cursor-pointer hover:scale-[1.02] transition-transform"
+            >
+              <div className="text-2xl mb-2">{stat.icon}</div>
+              <p className={`text-3xl font-bold ${stat.textColor}`}>{stat.value}</p>
+              <p className="text-sm text-text-muted mt-1">{stat.label}</p>
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Top Performer Banner */}
       {!loadingChart && topPerformer && topPerformer.todayTasks > 0 && (
         <div className="mb-8 relative overflow-hidden glass-card p-6 border border-amber-500/30 bg-gradient-to-r from-amber-500/10 to-orange-500/10 group">
@@ -463,29 +486,6 @@ export default function AdminDashboard() {
               </p>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Stats Grid */}
-      {loadingStats ? (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="shimmer h-32 rounded-2xl" />
-          ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8 stagger-children">
-          {statCards.map((stat) => (
-            <button
-              key={stat.label}
-              onClick={() => router.push(stat.href)}
-              className="stat-card text-left cursor-pointer hover:scale-[1.02] transition-transform"
-            >
-              <div className="text-2xl mb-2">{stat.icon}</div>
-              <p className={`text-3xl font-bold ${stat.textColor}`}>{stat.value}</p>
-              <p className="text-sm text-text-muted mt-1">{stat.label}</p>
-            </button>
-          ))}
         </div>
       )}
 
