@@ -95,7 +95,7 @@ export async function GET(request: Request) {
       .where(and(gte(tasks.submittedAt, weekStart), userCondition));
 
     // Per-employee stats (today focused)
-    const employeeStats = await db
+    const rawEmployeeStats = await db
       .select({
         userId: users.id,
         displayName: users.displayName,
@@ -107,6 +107,12 @@ export async function GET(request: Request) {
       .leftJoin(tasks, eq(users.id, tasks.userId))
       .groupBy(users.id, users.displayName, users.avatarColor)
       .orderBy(sql`count(case when ${tasks.submittedAt} >= ${bdStart} and ${tasks.submittedAt} < ${bdEnd} then 1 end) desc`);
+
+    const employeeStats = rawEmployeeStats.map(emp => ({
+      ...emp,
+      todayTasks: Number(emp.todayTasks),
+      weekTasks: Number(emp.weekTasks)
+    }));
 
     let recentActivity: any[] = [];
     if (isAdmin) {
