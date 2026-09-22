@@ -31,12 +31,14 @@ export async function GET(request: Request) {
     }
 
     const isAdmin = session.role === "admin";
+    const personalOnly = url.searchParams.get("personal") === "true";
+    const fetchGlobalStats = isAdmin && !personalOnly;
 
     const { bdStart, bdEnd, bdDateStr } = getBDToday(dateParam || undefined);
     const weekStart = getBDWeekStart();
 
     // Base condition for user filtering
-    const userCondition = isAdmin ? undefined : eq(tasks.userId, session.userId);
+    const userCondition = fetchGlobalStats ? undefined : eq(tasks.userId, session.userId);
 
     // Today's stats (BD time)
     const [todayTotal] = await db

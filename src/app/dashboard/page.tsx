@@ -55,7 +55,7 @@ export default function DashboardPage() {
     try {
       const [tasksRes, statsRes] = await Promise.all([
         fetch("/api/tasks?limit=10&personal=true"),
-        fetch("/api/stats")
+        fetch("/api/stats?personal=true")
       ]);
       const tasksData = await tasksRes.json();
       const statsData = await statsRes.json();
