@@ -22,10 +22,12 @@
 }
 
 /* Base Styles */
-body {
+html, body {
   background: var(--color-navy-950);
   color: var(--color-text-primary);
   font-family: "Inter", system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+  max-width: 100vw;
 }
 
 /* Scrollbar */

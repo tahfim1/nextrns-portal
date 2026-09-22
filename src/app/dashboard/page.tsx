@@ -202,10 +202,10 @@ export default function DashboardPage() {
       </div>
 
       {/* Quick Action */}
-      <div className="mb-8 fade-in">
+      <div className="mb-8 fade-in flex flex-col sm:flex-row flex-wrap gap-4">
         <Link
           href="/dashboard/submit"
-          className="btn-primary inline-flex items-center gap-3 text-base px-8 py-4 rounded-2xl"
+          className="btn-primary inline-flex items-center justify-center gap-3 text-base px-6 py-4 rounded-2xl flex-1 sm:flex-none"
         >
           <span className="flex items-center gap-3">
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -217,7 +217,7 @@ export default function DashboardPage() {
         {(user?.username === "jenifar" || user?.role === "admin") && (
           <Link
             href="/dashboard/report"
-            className="btn-primary inline-flex items-center gap-3 text-base px-8 py-4 rounded-2xl ml-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-amber-500/25"
+            className="btn-primary inline-flex items-center justify-center gap-3 text-base px-6 py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-amber-500/25 flex-1 sm:flex-none"
           >
             <span className="flex items-center gap-3 text-white">
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

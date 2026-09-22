@@ -172,7 +172,7 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-6">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 text-center sm:text-left">
           {user?.profilePicture ? (
             <img 
               src={user.profilePicture} 
@@ -224,22 +224,22 @@ export default function SettingsPage() {
         </div>
 
         <form onSubmit={handleUpdateDesignation} className="space-y-4">
-          <div>
+          <div className="flex flex-col sm:flex-row gap-3">
             <input
               type="text"
               value={designation}
               onChange={(e) => setDesignation(e.target.value)}
-              className="input-glass"
+              className="input-glass flex-1"
               placeholder="e.g. Frontend Developer, QA Engineer, Project Manager"
             />
+            <button
+              type="submit"
+              disabled={updatingDesignation || designation === (user?.designation || "")}
+              className="btn-primary px-6 py-2.5 disabled:opacity-50 whitespace-nowrap"
+            >
+              <span>{updatingDesignation ? "Updating..." : "Save"}</span>
+            </button>
           </div>
-          <button
-            type="submit"
-            disabled={updatingDesignation || designation === (user?.designation || "")}
-            className="btn-primary px-6 py-2.5 disabled:opacity-50"
-          >
-            <span>{updatingDesignation ? "Updating..." : "Save Designation"}</span>
-          </button>
         </form>
       </div>
 
