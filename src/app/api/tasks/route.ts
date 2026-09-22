@@ -67,6 +67,7 @@ export async function GET(request: NextRequest) {
         clientId: tasks.clientId,
         userName: users.displayName,
         userAvatar: users.avatarColor,
+        userProfilePicture: users.profilePicture,
         clientName: clients.name,
       })
       .from(tasks)

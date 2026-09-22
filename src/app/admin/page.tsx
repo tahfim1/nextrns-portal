@@ -23,10 +23,10 @@ interface Stats {
   thisWeek: number;
 }
 
-interface EmployeeStat {
   userId: number;
   displayName: string;
   avatarColor: string;
+  profilePicture?: string | null;
   todayTasks: number;
   weekTasks: number;
 }
@@ -41,6 +41,7 @@ interface Activity {
   submittedAt: string;
   userName: string;
   userAvatar: string;
+  userProfilePicture?: string | null;
 }
 
 interface ExportTask {
@@ -411,12 +412,20 @@ export default function AdminDashboard() {
           <div className="absolute -right-10 -top-10 w-32 h-32 bg-amber-500/20 rounded-full blur-3xl group-hover:bg-amber-500/30 transition-all duration-500" />
           <div className="flex items-center gap-4 relative z-10">
             <div className="relative">
-              <div 
-                className="w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg ring-4 ring-amber-500/30"
-                style={{ backgroundColor: topPerformer.avatarColor }}
-              >
-                {topPerformer.displayName.charAt(0)}
-              </div>
+              {topPerformer.profilePicture ? (
+                <img 
+                  src={topPerformer.profilePicture} 
+                  alt="Top Performer" 
+                  className="w-16 h-16 rounded-full object-cover shadow-lg ring-4 ring-amber-500/30" 
+                />
+              ) : (
+                <div 
+                  className="w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg ring-4 ring-amber-500/30"
+                  style={{ backgroundColor: topPerformer.avatarColor }}
+                >
+                  {topPerformer.displayName.charAt(0)}
+                </div>
+              )}
               <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-lg">
                 🏆 MVP
               </div>
@@ -528,12 +537,20 @@ export default function AdminDashboard() {
                   className="flex items-center gap-3 p-3 rounded-xl bg-glass/50 hover:bg-glass-hover transition-all cursor-pointer"
                 >
                   <span className="text-text-muted text-sm font-mono w-6">#{idx + 1}</span>
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs"
-                    style={{ backgroundColor: emp.avatarColor }}
-                  >
-                    {emp.displayName.charAt(0)}
-                  </div>
+                  {emp.profilePicture ? (
+                    <img 
+                      src={emp.profilePicture} 
+                      alt="User" 
+                      className="w-8 h-8 rounded-full object-cover" 
+                    />
+                  ) : (
+                    <div
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs"
+                      style={{ backgroundColor: emp.avatarColor }}
+                    >
+                      {emp.displayName.charAt(0)}
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-text-primary group-hover:text-amber-400 transition-colors">{emp.displayName}</p>
                     <p className="text-xs text-text-muted">{emp.weekTasks} this week</p>
@@ -570,12 +587,20 @@ export default function AdminDashboard() {
                   onClick={() => setSelectedTask(activity)}
                   className="flex items-center gap-3 p-3 rounded-xl bg-glass/50 hover:bg-glass-hover transition-all cursor-pointer"
                 >
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0"
-                    style={{ backgroundColor: activity.userAvatar || "#3b82f6" }}
-                  >
-                    {activity.userName?.charAt(0) || "?"}
-                  </div>
+                  {activity.userProfilePicture ? (
+                    <img 
+                      src={activity.userProfilePicture} 
+                      alt="User" 
+                      className="w-8 h-8 rounded-full object-cover flex-shrink-0" 
+                    />
+                  ) : (
+                    <div
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0"
+                      style={{ backgroundColor: activity.userAvatar || "#3b82f6" }}
+                    >
+                      {activity.userName?.charAt(0) || "?"}
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-text-primary truncate">
                       <span className="font-medium">{activity.userName}</span>{" "}
@@ -644,12 +669,20 @@ export default function AdminDashboard() {
           <div className="glass-card w-full max-w-2xl overflow-hidden slide-up border border-glass-border shadow-2xl flex flex-col max-h-[90vh]">
             <div className="p-4 border-b border-glass-border flex items-center justify-between bg-glass/50">
               <h3 className="font-bold text-lg text-text-primary flex items-center gap-3">
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs"
-                  style={{ backgroundColor: selectedTask.userAvatar || "#3b82f6" }}
-                >
-                  {selectedTask.userName?.charAt(0) || "?"}
-                </div>
+                {selectedTask.userProfilePicture ? (
+                  <img 
+                    src={selectedTask.userProfilePicture} 
+                    alt="User" 
+                    className="w-8 h-8 rounded-full object-cover" 
+                  />
+                ) : (
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs"
+                    style={{ backgroundColor: selectedTask.userAvatar || "#3b82f6" }}
+                  >
+                    {selectedTask.userName?.charAt(0) || "?"}
+                  </div>
+                )}
                 {selectedTask.userName}&apos;s Task
               </h3>
               <button

@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
         userId: tasks.userId,
         userName: users.displayName,
         userAvatar: users.avatarColor,
+        userProfilePicture: users.profilePicture,
         clientName: clients.name,
       })
       .from(tasks)
@@ -58,6 +59,7 @@ export async function GET(request: NextRequest) {
             id: uId,
             name: task.userName,
             avatar: task.userAvatar,
+            profilePicture: task.userProfilePicture,
           },
           tasks: [],
         };

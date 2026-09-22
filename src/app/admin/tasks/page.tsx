@@ -16,6 +16,7 @@ interface Task {
   reviewedAt: string | null;
   userName: string;
   userAvatar: string;
+  userProfilePicture: string | null;
   clientName: string;
 }
 
@@ -219,12 +220,20 @@ export default function AdminTasksPage() {
                 onClick={() => setExpandedTask(expandedTask === task.id ? null : task.id)}
                 className="w-full text-left p-5 flex items-center gap-4 hover:bg-glass-hover transition-colors"
               >
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0"
-                  style={{ backgroundColor: task.userAvatar || "#3b82f6" }}
-                >
-                  {task.userName?.charAt(0) || "?"}
-                </div>
+                {task.userProfilePicture ? (
+                  <img 
+                    src={task.userProfilePicture} 
+                    alt="User" 
+                    className="w-10 h-10 rounded-full object-cover flex-shrink-0 border border-glass-border" 
+                  />
+                ) : (
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0"
+                    style={{ backgroundColor: task.userAvatar || "#3b82f6" }}
+                  >
+                    {task.userName?.charAt(0) || "?"}
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-text-primary truncate">{task.title}</p>
                   <p className="text-xs text-text-muted mt-0.5">
