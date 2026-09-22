@@ -465,51 +465,57 @@ export default function AdminDashboard() {
         </div>
 
         {loadingChart ? (
-          <div className="h-64 w-full shimmer rounded-xl" />
+          <div className="h-[300px] w-full shimmer rounded-xl" />
         ) : chartData.length === 0 || chartData.every(d => d.tasks === 0) ? (
-          <div className="h-64 w-full flex items-center justify-center border border-dashed border-glass-border rounded-xl">
-            <p className="text-text-muted text-sm">No task data available for {chartDate}</p>
+          <div className="h-[300px] w-full flex flex-col items-center justify-center border border-dashed border-glass-border rounded-xl bg-glass/20">
+            <svg className="w-12 h-12 text-text-muted mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
+            </svg>
+            <p className="text-text-secondary font-medium">No tasks recorded for {chartDate}</p>
+            <p className="text-text-muted text-sm mt-1">Select a different date to view activity</p>
           </div>
         ) : (
-          <div className="h-80 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff15" vertical={false} />
-                <XAxis 
-                  dataKey="name" 
-                  stroke="#ffffff60" 
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis 
-                  stroke="#ffffff60" 
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                  allowDecimals={false}
-                />
-                <Tooltip 
-                  content={<CustomTooltip />} 
-                  cursor={{ fill: '#ffffff05' }}
-                />
-                <Bar 
-                  dataKey="tasks" 
-                  radius={[6, 6, 0, 0]}
-                  animationDuration={1500}
-                  onClick={(data) => {
-                    if (data && data.payload && data.payload.userId) {
-                      router.push(`/admin/tasks?userId=${data.payload.userId}&date=${chartDate}`);
-                    }
-                  }}
-                  className="cursor-pointer hover:opacity-80"
-                >
-                  {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="h-[350px] w-full overflow-x-auto custom-scrollbar">
+            <div className="min-w-[600px] h-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+                  <XAxis 
+                    dataKey="name" 
+                    stroke="#ffffff60" 
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis 
+                    stroke="#ffffff60" 
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                    allowDecimals={false}
+                  />
+                  <Tooltip 
+                    content={<CustomTooltip />} 
+                    cursor={{ fill: '#ffffff05' }}
+                  />
+                  <Bar 
+                    dataKey="tasks" 
+                    radius={[6, 6, 0, 0]}
+                    animationDuration={1500}
+                    onClick={(data) => {
+                      if (data && data.payload && data.payload.userId) {
+                        router.push(`/admin/tasks?userId=${data.payload.userId}&date=${chartDate}`);
+                      }
+                    }}
+                    className="cursor-pointer hover:opacity-80"
+                  >
+                    {chartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         )}
       </div>

@@ -247,39 +247,41 @@ export default function DashboardPage() {
             <p className="text-text-muted text-sm">No task data available for today</p>
           </div>
         ) : (
-          <div className="h-80 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff15" vertical={false} />
-                <XAxis 
-                  dataKey="name" 
-                  stroke="#ffffff60" 
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis 
-                  stroke="#ffffff60" 
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                  allowDecimals={false}
-                />
-                <Tooltip 
-                  content={<CustomTooltip />} 
-                  cursor={{ fill: '#ffffff05' }}
-                />
-                <Bar 
-                  dataKey="tasks" 
-                  radius={[6, 6, 0, 0]}
-                  animationDuration={1500}
-                >
-                  {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="h-80 w-full overflow-x-auto custom-scrollbar">
+            <div className="min-w-[600px] h-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff15" vertical={false} />
+                  <XAxis 
+                    dataKey="name" 
+                    stroke="#ffffff60" 
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis 
+                    stroke="#ffffff60" 
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                    allowDecimals={false}
+                  />
+                  <Tooltip 
+                    content={<CustomTooltip />} 
+                    cursor={{ fill: '#ffffff05' }}
+                  />
+                  <Bar 
+                    dataKey="tasks" 
+                    radius={[6, 6, 0, 0]}
+                    animationDuration={1500}
+                  >
+                    {chartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         )}
       </div>
