@@ -34,6 +34,9 @@ interface EmployeeStat {
 interface Activity {
   id: number;
   title: string;
+  description?: string;
+  proofUrl?: string;
+  proofLink?: string;
   status: string;
   submittedAt: string;
   userName: string;
@@ -84,6 +87,7 @@ export default function AdminDashboard() {
   const [approving, setApproving] = useState(false);
   const [autoApproval, setAutoApproval] = useState(false);
   const [togglingAutoApproval, setTogglingAutoApproval] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Activity | null>(null);
 
   // Export state
   const [exportDate, setExportDate] = useState(getBDToday());
@@ -290,29 +294,29 @@ export default function AdminDashboard() {
       label: "Today's Tasks",
       value: stats?.todayTotal ?? 0,
       textColor: "text-blue-400",
-      icon: "\ud83d\udccb",
-      href: "/admin/tasks",
+      icon: "📋",
+      href: `/admin/tasks?date=${getBDToday()}`,
     },
     {
       label: "Pending",
       value: stats?.todayPending ?? 0,
       textColor: "text-amber-400",
-      icon: "\u23f3",
-      href: "/admin/tasks?status=submitted",
+      icon: "⏳",
+      href: `/admin/tasks?status=submitted&date=${getBDToday()}`,
     },
     {
       label: "Approved",
       value: stats?.todayApproved ?? 0,
       textColor: "text-green-400",
-      icon: "\u2705",
-      href: "/admin/tasks?status=approved",
+      icon: "✅",
+      href: `/admin/tasks?status=approved&date=${getBDToday()}`,
     },
     {
       label: "Rejected",
       value: stats?.todayRejected ?? 0,
       textColor: "text-red-400",
-      icon: "\u274c",
-      href: "/admin/tasks?status=rejected",
+      icon: "❌",
+      href: `/admin/tasks?status=rejected&date=${getBDToday()}`,
     },
   ];
 
@@ -573,7 +577,11 @@ export default function AdminDashboard() {
           ) : (
             <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
               {employeeStats.map((emp, idx) => (
-                <div key={emp.userId} className="flex items-center gap-3 p-3 rounded-xl bg-glass/50 hover:bg-glass-hover transition-all">
+                <div 
+                  key={emp.userId} 
+                  onClick={() => router.push(`/admin/tasks?userId=${emp.userId}&date=${chartDate}`)}
+                  className="flex items-center gap-3 p-3 rounded-xl bg-glass/50 hover:bg-glass-hover transition-all cursor-pointer"
+                >
                   <span className="text-text-muted text-sm font-mono w-6">#{idx + 1}</span>
                   <div
                     className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs"
@@ -582,7 +590,7 @@ export default function AdminDashboard() {
                     {emp.displayName.charAt(0)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-text-primary">{emp.displayName}</p>
+                    <p className="text-sm font-medium text-text-primary group-hover:text-amber-400 transition-colors">{emp.displayName}</p>
                     <p className="text-xs text-text-muted">{emp.weekTasks} this week</p>
                   </div>
                   <div className="text-right">
@@ -612,7 +620,11 @@ export default function AdminDashboard() {
           ) : (
             <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
               {recentActivity.map((activity) => (
-                <div key={activity.id} className="flex items-center gap-3 p-3 rounded-xl bg-glass/50 hover:bg-glass-hover transition-all">
+                <div 
+                  key={activity.id} 
+                  onClick={() => setSelectedTask(activity)}
+                  className="flex items-center gap-3 p-3 rounded-xl bg-glass/50 hover:bg-glass-hover transition-all cursor-pointer"
+                >
                   <div
                     className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0"
                     style={{ backgroundColor: activity.userAvatar || "#3b82f6" }}
@@ -680,6 +692,87 @@ export default function AdminDashboard() {
           )}
         </div>
       </div>
+
+      {/* Task Details Modal */}
+      {selectedTask && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm fade-in">
+          <div className="glass-card w-full max-w-2xl overflow-hidden slide-up border border-glass-border shadow-2xl flex flex-col max-h-[90vh]">
+            <div className="p-4 border-b border-glass-border flex items-center justify-between bg-glass/50">
+              <h3 className="font-bold text-lg text-text-primary flex items-center gap-3">
+                <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs"
+                  style={{ backgroundColor: selectedTask.userAvatar || "#3b82f6" }}
+                >
+                  {selectedTask.userName?.charAt(0) || "?"}
+                </div>
+                {selectedTask.userName}&apos;s Task
+              </h3>
+              <button
+                onClick={() => setSelectedTask(null)}
+                className="text-text-muted hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto custom-scrollbar">
+              <div className="mb-6">
+                <div className="flex items-start justify-between gap-4 mb-2">
+                  <h4 className="text-xl font-bold text-text-primary">{selectedTask.title}</h4>
+                  <span className={`badge badge-${selectedTask.status}`}>{selectedTask.status}</span>
+                </div>
+                <p className="text-sm text-text-muted">Submitted on {formatBDTime(selectedTask.submittedAt)}</p>
+              </div>
+
+              {selectedTask.description && (
+                <div className="mb-6 bg-glass/30 p-4 rounded-xl border border-glass-border">
+                  <p className="text-sm text-text-secondary whitespace-pre-wrap">{selectedTask.description}</p>
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <h5 className="font-semibold text-text-primary border-b border-glass-border pb-2">Proof of Work</h5>
+                
+                {selectedTask.proofLink && (
+                  <div>
+                    <a href={selectedTask.proofLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-500/10 text-blue-400 text-sm hover:bg-blue-500/20 transition-colors">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                      </svg>
+                      Open Link
+                    </a>
+                  </div>
+                )}
+
+                {selectedTask.proofUrl && selectedTask.proofUrl.length > 0 && (
+                  <div className="rounded-xl overflow-hidden border border-glass-border bg-black/40">
+                    <a href={selectedTask.proofUrl} target="_blank" rel="noopener noreferrer">
+                      <img 
+                        src={selectedTask.proofUrl} 
+                        alt="Task Proof" 
+                        className="w-full object-contain max-h-[400px] hover:opacity-90 transition-opacity" 
+                      />
+                    </a>
+                  </div>
+                )}
+
+                {(!selectedTask.proofUrl || selectedTask.proofUrl.length === 0) && !selectedTask.proofLink && (
+                  <p className="text-sm text-text-muted italic">No proof provided for this task.</p>
+                )}
+              </div>
+            </div>
+            <div className="p-4 border-t border-glass-border bg-glass/50 flex justify-end gap-3">
+              <button 
+                onClick={() => router.push(`/admin/tasks?date=${chartDate}`)}
+                className="px-4 py-2 text-sm font-medium text-amber-400 hover:text-amber-300 transition-colors"
+              >
+                View all tasks for this day →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

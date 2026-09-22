@@ -115,6 +115,9 @@ export async function GET(request: Request) {
         .select({
           id: tasks.id,
           title: tasks.title,
+          description: tasks.description,
+          proofUrl: tasks.proofUrl,
+          proofLink: tasks.proofLink,
           status: tasks.status,
           submittedAt: tasks.submittedAt,
           userName: users.displayName,
