@@ -9,6 +9,7 @@ interface Employee {
   username: string;
   displayName: string;
   role: string;
+  avatarColor: string;
   profilePicture?: string;
   designation?: string;
   createdAt: string;
