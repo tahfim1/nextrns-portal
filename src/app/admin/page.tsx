@@ -23,6 +23,7 @@ interface Stats {
   thisWeek: number;
 }
 
+interface EmployeeStat {
   userId: number;
   displayName: string;
   avatarColor: string;
