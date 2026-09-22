@@ -18,8 +18,6 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
     }
 
-    await db
-      .update(users)
     const updateData: any = { updatedAt: new Date() };
     if (profilePicture !== undefined) updateData.profilePicture = profilePicture;
     if (designation !== undefined) updateData.designation = designation;
