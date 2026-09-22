@@ -153,7 +153,7 @@ export default function DashboardPage() {
             Submit New Task
           </span>
         </Link>
-        {user?.username === "jenifar" && (
+        {(user?.username === "jenifar" || user?.role === "admin") && (
           <Link
             href="/dashboard/report"
             className="btn-primary inline-flex items-center gap-3 text-base px-8 py-4 rounded-2xl ml-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-amber-500/25"
