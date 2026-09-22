@@ -33,7 +33,7 @@ export default function DashboardPage() {
 
   const fetchTasks = async () => {
     try {
-      const res = await fetch("/api/tasks?limit=5&personal=true");
+      const res = await fetch("/api/tasks?limit=100&personal=true");
       const data = await res.json();
       setTasks(data.tasks || []);
     } catch (err) {
@@ -195,7 +195,7 @@ export default function DashboardPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {tasks.map((task) => (
+            {tasks.slice(0, 10).map((task) => (
               <div
                 key={task.id}
                 className="flex items-center gap-4 p-4 rounded-xl bg-glass/50 hover:bg-glass-hover border border-transparent hover:border-glass-border transition-all duration-200"
