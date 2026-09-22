@@ -89,7 +89,6 @@ export async function GET(request: Request) {
       })
       .from(users)
       .leftJoin(tasks, eq(users.id, tasks.userId))
-      .where(eq(users.role, "employee"))
       .groupBy(users.id, users.displayName, users.avatarColor)
       .orderBy(sql`count(case when ${tasks.submittedAt} >= ${bdStart} and ${tasks.submittedAt} < ${bdEnd} then 1 end) desc`);
 

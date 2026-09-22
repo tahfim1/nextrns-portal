@@ -31,7 +31,7 @@ export default function DashboardPage() {
 
   const fetchTasks = async () => {
     try {
-      const res = await fetch("/api/tasks?limit=5");
+      const res = await fetch("/api/tasks?limit=5&personal=true");
       const data = await res.json();
       setTasks(data.tasks || []);
     } catch (err) {

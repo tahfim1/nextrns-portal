@@ -23,8 +23,10 @@ export async function GET(request: NextRequest) {
 
     const conditions = [];
 
-    // Employees can only see their own tasks
-    if (session.role !== "admin") {
+    const personalOnly = searchParams.get("personal") === "true";
+
+    // Employees can only see their own tasks. Admins see all unless personal=true.
+    if (session.role !== "admin" || personalOnly) {
       conditions.push(eq(tasks.userId, session.userId));
     } else if (userId) {
       conditions.push(eq(tasks.userId, parseInt(userId)));

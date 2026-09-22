@@ -34,7 +34,7 @@ export default function HistoryPage() {
       const params = new URLSearchParams({ page: String(page), limit: "10" });
       if (filter !== "all") params.append("status", filter);
 
-      const res = await fetch(`/api/tasks?${params}`);
+      const res = await fetch(`/api/tasks?personal=true&${params}`);
       const data = await res.json();
       setTasks(data.tasks || []);
       setTotalPages(data.pagination?.totalPages || 1);
