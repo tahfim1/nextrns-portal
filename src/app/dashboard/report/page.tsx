@@ -119,7 +119,7 @@ export default function DailyReportPage() {
             new Paragraph({
               children: [
                 new TextRun({ text: `${index + 1}. [${task.clientName}] ${task.title}`, bold: true }),
-                new TextRun({ text: ` (${task.status.toUpperCase()}) - ${formatBDTime(task.submittedAt)}`, italics: true }),
+                new TextRun({ text: ` ${task.status === "approved" ? "✅" : task.status === "rejected" ? "❌" : "⏳"} - ${formatBDTime(task.submittedAt)}`, italics: true }),
               ],
               spacing: { before: 120, after: task.description ? 0 : 120 },
             })
