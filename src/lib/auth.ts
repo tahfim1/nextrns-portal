@@ -14,6 +14,7 @@ export interface SessionPayload {
   role: "employee" | "admin";
   avatarColor: string;
   profilePicture?: string | null;
+  designation?: string | null;
 }
 
 export async function signToken(payload: SessionPayload): Promise<string> {

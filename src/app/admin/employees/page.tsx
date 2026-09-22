@@ -9,8 +9,8 @@ interface Employee {
   username: string;
   displayName: string;
   role: string;
-  avatarColor: string;
   profilePicture?: string;
+  designation?: string;
   createdAt: string;
   taskCount: number;
 }
@@ -22,13 +22,14 @@ export default function AdminEmployeesPage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newUsername, setNewUsername] = useState("");
   const [newDisplayName, setNewDisplayName] = useState("");
+  const [newDesignation, setNewDesignation] = useState("");
   const [newPassword, setNewPassword] = useState("12345");
   const [adding, setAdding] = useState(false);
   const [resettingId, setResettingId] = useState<number | null>(null);
 
-  // Edit State
   const [editingUser, setEditingUser] = useState<Employee | null>(null);
   const [editDisplayName, setEditDisplayName] = useState("");
+  const [editDesignation, setEditDesignation] = useState("");
   const [editRole, setEditRole] = useState("employee");
   const [uploadingImage, setUploadingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -60,6 +61,7 @@ export default function AdminEmployeesPage() {
         body: JSON.stringify({
           username: newUsername.trim(),
           displayName: newDisplayName.trim(),
+          designation: newDesignation.trim(),
           password: newPassword,
         }),
       });
@@ -67,6 +69,7 @@ export default function AdminEmployeesPage() {
         showToast("Employee added!", "success");
         setNewUsername("");
         setNewDisplayName("");
+        setNewDesignation("");
         setNewPassword("12345");
         setShowAddForm(false);
         fetchEmployees();
@@ -105,6 +108,7 @@ export default function AdminEmployeesPage() {
   const openEditModal = (emp: Employee) => {
     setEditingUser(emp);
     setEditDisplayName(emp.displayName);
+    setEditDesignation(emp.designation || "");
     setEditRole(emp.role);
   };
 
@@ -122,6 +126,7 @@ export default function AdminEmployeesPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           displayName: editDisplayName,
+          designation: editDesignation.trim(),
           role: editRole,
         }),
       });
@@ -233,6 +238,16 @@ export default function AdminEmployeesPage() {
                   required
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-2">Designation / Job Title</label>
+                <input
+                  type="text"
+                  value={newDesignation}
+                  onChange={(e) => setNewDesignation(e.target.value)}
+                  className="input-glass"
+                  placeholder="e.g. Employee"
+                />
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-text-secondary mb-2">Initial Password</label>
@@ -284,7 +299,9 @@ export default function AdminEmployeesPage() {
                     <span className="badge bg-amber-500/20 text-amber-400 border-amber-500/20 text-[10px]">ADMIN</span>
                   )}
                 </div>
-                <p className="text-xs text-text-muted mt-0.5">@{emp.username}</p>
+                <p className="text-xs text-text-muted mt-0.5">
+                  {emp.designation ? `${emp.designation} • ` : ""}@{emp.username}
+                </p>
               </div>
               <div className="text-right mr-4">
                 <p className="text-xl font-bold text-text-primary">{emp.taskCount}</p>
@@ -375,6 +392,15 @@ export default function AdminEmployeesPage() {
                   onChange={(e) => setEditDisplayName(e.target.value)}
                   className="input-glass"
                   required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-2">Designation / Job Title</label>
+                <input
+                  type="text"
+                  value={editDesignation}
+                  onChange={(e) => setEditDesignation(e.target.value)}
+                  className="input-glass"
                 />
               </div>
               <div>

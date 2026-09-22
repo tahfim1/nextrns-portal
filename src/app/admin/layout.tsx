@@ -203,7 +203,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               )}
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-text-primary truncate">{user?.displayName || "Loading..."}</p>
-                <p className="text-xs text-amber-400 capitalize">{user?.role || "Administrator"}</p>
+                <p className="text-xs text-amber-400 capitalize">{user?.designation || user?.role || "Administrator"}</p>
               </div>
             </div>
             <button

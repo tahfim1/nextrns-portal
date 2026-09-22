@@ -12,18 +12,21 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { profilePicture } = body;
+    const { profilePicture, designation } = body;
 
-    if (profilePicture === undefined) {
+    if (profilePicture === undefined && designation === undefined) {
       return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
     }
 
     await db
       .update(users)
-      .set({
-        profilePicture,
-        updatedAt: new Date(),
-      })
+    const updateData: any = { updatedAt: new Date() };
+    if (profilePicture !== undefined) updateData.profilePicture = profilePicture;
+    if (designation !== undefined) updateData.designation = designation;
+
+    await db
+      .update(users)
+      .set(updateData)
       .where(eq(users.id, session.userId));
 
     // Update session cookie
@@ -33,10 +36,11 @@ export async function PATCH(request: NextRequest) {
       displayName: session.displayName,
       role: session.role,
       avatarColor: session.avatarColor,
-      profilePicture,
+      profilePicture: profilePicture !== undefined ? profilePicture : session.profilePicture,
+      designation: designation !== undefined ? designation : session.designation,
     });
 
-    return NextResponse.json({ success: true, profilePicture });
+    return NextResponse.json({ success: true, profilePicture, designation });
   } catch (error) {
     console.error("Update profile error:", error);
     return NextResponse.json(

@@ -29,6 +29,7 @@ export const users = pgTable("users", {
     .default("#3b82f6")
     .notNull(),
   profilePicture: text("profile_picture"),
+  designation: varchar("designation", { length: 100 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

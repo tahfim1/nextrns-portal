@@ -23,7 +23,7 @@ export function useToast() {
 
 // User context
 interface UserContextType {
-  user: { userId: number; username: string; displayName: string; role: string; avatarColor: string; profilePicture?: string | null } | null;
+  user: { userId: number; username: string; displayName: string; role: string; avatarColor: string; profilePicture?: string | null; designation?: string | null } | null;
 }
 
 export const UserContext = createContext<UserContextType>({ user: null });
@@ -203,7 +203,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-text-primary truncate">{user?.displayName || "Loading..."}</p>
-                  <p className="text-xs text-text-muted truncate">@{user?.username || "..."}</p>
+                  <p className="text-xs text-text-muted truncate">
+                    {user?.designation ? `${user.designation} • ` : ""}@{user?.username || "..."}
+                  </p>
                 </div>
               </div>
               <button

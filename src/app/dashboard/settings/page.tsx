@@ -15,6 +15,16 @@ export default function SettingsPage() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [designation, setDesignation] = useState("");
+  const [updatingDesignation, setUpdatingDesignation] = useState(false);
+
+  // Initialize designation when user loads
+  useState(() => {
+    if (user && user.designation) {
+      setDesignation(user.designation);
+    }
+  });
+
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -113,6 +123,34 @@ export default function SettingsPage() {
     }
   };
 
+  const handleUpdateDesignation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setUpdatingDesignation(true);
+    try {
+      const updateRes = await fetch("/api/users/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ designation: designation.trim() }),
+      });
+
+      if (!updateRes.ok) throw new Error("Failed to save designation");
+
+      const stored = sessionStorage.getItem("nextrns-user");
+      if (stored) {
+        const userObj = JSON.parse(stored);
+        userObj.designation = designation.trim();
+        sessionStorage.setItem("nextrns-user", JSON.stringify(userObj));
+      }
+
+      showToast("Designation updated! Refreshing...", "success");
+      setTimeout(() => window.location.reload(), 1000);
+    } catch (err: any) {
+      showToast(err.message || "Failed to update designation", "error");
+    } finally {
+      setUpdatingDesignation(false);
+    }
+  };
+
   return (
     <div className="max-w-2xl mx-auto fade-in">
       <div className="mb-8">
@@ -169,6 +207,40 @@ export default function SettingsPage() {
             <p className="text-xs text-text-muted mt-2">JPG, PNG, GIF max 10MB. Will be compressed.</p>
           </div>
         </div>
+      </div>
+
+      {/* Designation */}
+      <div className="glass-card p-6 mb-8">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 flex items-center justify-center">
+            <svg className="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5zm6-10.125a1.875 1.875 0 11-3.75 0 1.875 1.875 0 013.75 0zm1.294 6.336a6.721 6.721 0 01-3.17.789 6.721 6.721 0 01-3.168-.789 3.376 3.376 0 016.338 0z" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-text-primary">Job Title / Designation</h2>
+            <p className="text-sm text-text-muted">Set your role or designation</p>
+          </div>
+        </div>
+
+        <form onSubmit={handleUpdateDesignation} className="space-y-4">
+          <div>
+            <input
+              type="text"
+              value={designation}
+              onChange={(e) => setDesignation(e.target.value)}
+              className="input-glass"
+              placeholder="e.g. Frontend Developer, QA Engineer, Project Manager"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={updatingDesignation || designation === (user?.designation || "")}
+            className="btn-primary px-6 py-2.5 disabled:opacity-50"
+          >
+            <span>{updatingDesignation ? "Updating..." : "Save Designation"}</span>
+          </button>
+        </form>
       </div>
 
       {/* Change Password */}

@@ -20,6 +20,7 @@ export async function GET() {
         role: users.role,
         avatarColor: users.avatarColor,
         profilePicture: users.profilePicture,
+        designation: users.designation,
         createdAt: users.createdAt,
         taskCount: sql<number>`(SELECT COUNT(*) FROM tasks WHERE tasks.user_id = ${users.id})`,
       })
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    const { username, displayName, password } = await request.json();
+    const { username, displayName, password, designation } = await request.json();
 
     if (!username || !displayName || !password) {
       return NextResponse.json(
@@ -63,6 +64,7 @@ export async function POST(request: NextRequest) {
         passwordHash: hashSync(password, 10),
         role: "employee",
         avatarColor: randomColor,
+        designation: designation || "Employee",
       })
       .returning();
 
@@ -75,6 +77,7 @@ export async function POST(request: NextRequest) {
         role: newUser[0].role,
         avatarColor: newUser[0].avatarColor,
         profilePicture: newUser[0].profilePicture,
+        designation: newUser[0].designation,
       },
     });
   } catch (error) {

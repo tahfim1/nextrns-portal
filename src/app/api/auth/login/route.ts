@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
       if (dbError.message?.includes("profile_picture") || dbError.message?.includes("column")) {
         const { sql } = await import("drizzle-orm");
         try {
-          await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_picture text;`);
+          await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_picture text, ADD COLUMN IF NOT EXISTS designation varchar(100);`);
           user = await db
             .select()
             .from(users)
@@ -66,6 +66,7 @@ export async function POST(request: NextRequest) {
       role: foundUser.role,
       avatarColor: foundUser.avatarColor,
       profilePicture: foundUser.profilePicture,
+      designation: foundUser.designation,
     });
 
     return NextResponse.json({
@@ -77,6 +78,7 @@ export async function POST(request: NextRequest) {
         role: foundUser.role,
         avatarColor: foundUser.avatarColor,
         profilePicture: foundUser.profilePicture,
+        designation: foundUser.designation,
       },
     });
   } catch (error: any) {
