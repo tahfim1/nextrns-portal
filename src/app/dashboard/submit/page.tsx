@@ -289,7 +289,55 @@ export default function SubmitTaskPage() {
 
             <div className="space-y-6">
               
-              {/* Image Upload Area (Moved to top as primary action) */}
+              {/* Client Selection */}
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-2">
+                  Client <span className="text-red-400">*</span>
+                </label>
+                <select
+                  value={task.clientId}
+                  onChange={(e) => updateTask(index, { clientId: e.target.value })}
+                  className="input-glass appearance-none cursor-pointer"
+                  required
+                >
+                  <option value="" className="bg-navy-900">Select a client...</option>
+                  {clients.map((c) => (
+                    <option key={c.id} value={c.id} className="bg-navy-900">{c.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Task Title */}
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-2">
+                  Task Title <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={task.title}
+                  onChange={(e) => updateTask(index, { title: e.target.value })}
+                  className="input-glass"
+                  placeholder="e.g., Created 3 social media posts for Leo Bar"
+                  required
+                  maxLength={300}
+                />
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-2">
+                  Description <span className="text-text-muted">(optional)</span>
+                </label>
+                <textarea
+                  value={task.description}
+                  onChange={(e) => updateTask(index, { description: e.target.value })}
+                  className="input-glass resize-none"
+                  placeholder="Add more details about the task..."
+                  rows={2}
+                />
+              </div>
+              
+              {/* Image Upload Area */}
               <div>
                 <label className="block text-sm font-medium text-text-secondary mb-3">
                   Upload Proof Images <span className="text-text-muted">(Optional, but recommended)</span>
@@ -362,54 +410,6 @@ export default function SubmitTaskPage() {
                     ))}
                   </div>
                 )}
-              </div>
-
-              {/* Client Selection */}
-              <div>
-                <label className="block text-sm font-medium text-text-secondary mb-2">
-                  Client <span className="text-red-400">*</span>
-                </label>
-                <select
-                  value={task.clientId}
-                  onChange={(e) => updateTask(index, { clientId: e.target.value })}
-                  className="input-glass appearance-none cursor-pointer"
-                  required
-                >
-                  <option value="" className="bg-navy-900">Select a client...</option>
-                  {clients.map((c) => (
-                    <option key={c.id} value={c.id} className="bg-navy-900">{c.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Task Title */}
-              <div>
-                <label className="block text-sm font-medium text-text-secondary mb-2">
-                  Task Title <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={task.title}
-                  onChange={(e) => updateTask(index, { title: e.target.value })}
-                  className="input-glass"
-                  placeholder="e.g., Created 3 social media posts for Leo Bar"
-                  required
-                  maxLength={300}
-                />
-              </div>
-
-              {/* Description */}
-              <div>
-                <label className="block text-sm font-medium text-text-secondary mb-2">
-                  Description <span className="text-text-muted">(optional)</span>
-                </label>
-                <textarea
-                  value={task.description}
-                  onChange={(e) => updateTask(index, { description: e.target.value })}
-                  className="input-glass resize-none"
-                  placeholder="Add more details about the task..."
-                  rows={2}
-                />
               </div>
 
               {/* Link Input (Alternative) */}
