@@ -106,7 +106,7 @@ export async function GET(request: Request) {
       .groupBy(users.id, users.displayName, users.avatarColor)
       .orderBy(sql`count(case when ${tasks.submittedAt} >= ${bdStart} and ${tasks.submittedAt} < ${bdEnd} then 1 end) desc`);
 
-    let recentActivity = [];
+    let recentActivity: any[] = [];
     if (isAdmin) {
       // Recent activity (today only)
       recentActivity = await db
