@@ -26,18 +26,29 @@ export async function GET(request: Request) {
     const dateParam = url.searchParams.get("date");
 
     const session = await getSession();
-    if (!session || session.role !== "admin") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const isAdmin = session.role === "admin";
 
     const { bdStart, bdEnd, bdDateStr } = getBDToday(dateParam || undefined);
     const weekStart = getBDWeekStart();
+
+    // Base condition for user filtering
+    const userCondition = isAdmin ? undefined : eq(tasks.userId, session.userId);
 
     // Today's stats (BD time)
     const [todayTotal] = await db
       .select({ count: sql<number>`count(*)` })
       .from(tasks)
-      .where(and(gte(tasks.submittedAt, bdStart), lte(tasks.submittedAt, bdEnd)));
+      .where(
+        and(
+          gte(tasks.submittedAt, bdStart),
+          lte(tasks.submittedAt, bdEnd),
+          userCondition
+        )
+      );
 
     const [todayPending] = await db
       .select({ count: sql<number>`count(*)` })
@@ -46,7 +57,8 @@ export async function GET(request: Request) {
         and(
           gte(tasks.submittedAt, bdStart),
           lte(tasks.submittedAt, bdEnd),
-          eq(tasks.status, "submitted")
+          eq(tasks.status, "submitted"),
+          userCondition
         )
       );
 
@@ -57,7 +69,8 @@ export async function GET(request: Request) {
         and(
           gte(tasks.submittedAt, bdStart),
           lte(tasks.submittedAt, bdEnd),
-          eq(tasks.status, "approved")
+          eq(tasks.status, "approved"),
+          userCondition
         )
       );
 
@@ -68,7 +81,8 @@ export async function GET(request: Request) {
         and(
           gte(tasks.submittedAt, bdStart),
           lte(tasks.submittedAt, bdEnd),
-          eq(tasks.status, "rejected")
+          eq(tasks.status, "rejected"),
+          userCondition
         )
       );
 
@@ -76,37 +90,42 @@ export async function GET(request: Request) {
     const [weekTasks] = await db
       .select({ count: sql<number>`count(*)` })
       .from(tasks)
-      .where(gte(tasks.submittedAt, weekStart));
+      .where(and(gte(tasks.submittedAt, weekStart), userCondition));
 
-    // Per-employee stats (today focused)
-    const employeeStats = await db
-      .select({
-        userId: users.id,
-        displayName: users.displayName,
-        avatarColor: users.avatarColor,
-        todayTasks: sql<number>`count(case when ${tasks.submittedAt} >= ${bdStart} and ${tasks.submittedAt} < ${bdEnd} then 1 end)`,
-        weekTasks: sql<number>`count(case when ${tasks.submittedAt} >= ${weekStart} then 1 end)`,
-      })
-      .from(users)
-      .leftJoin(tasks, eq(users.id, tasks.userId))
-      .groupBy(users.id, users.displayName, users.avatarColor)
-      .orderBy(sql`count(case when ${tasks.submittedAt} >= ${bdStart} and ${tasks.submittedAt} < ${bdEnd} then 1 end) desc`);
+    let employeeStats = [];
+    let recentActivity = [];
 
-    // Recent activity (today only)
-    const recentActivity = await db
-      .select({
-        id: tasks.id,
-        title: tasks.title,
-        status: tasks.status,
-        submittedAt: tasks.submittedAt,
-        userName: users.displayName,
-        userAvatar: users.avatarColor,
-      })
-      .from(tasks)
-      .leftJoin(users, eq(tasks.userId, users.id))
-      .where(and(gte(tasks.submittedAt, bdStart), lte(tasks.submittedAt, bdEnd)))
-      .orderBy(desc(tasks.submittedAt))
-      .limit(20);
+    if (isAdmin) {
+      // Per-employee stats (today focused)
+      employeeStats = await db
+        .select({
+          userId: users.id,
+          displayName: users.displayName,
+          avatarColor: users.avatarColor,
+          todayTasks: sql<number>`count(case when ${tasks.submittedAt} >= ${bdStart} and ${tasks.submittedAt} < ${bdEnd} then 1 end)`,
+          weekTasks: sql<number>`count(case when ${tasks.submittedAt} >= ${weekStart} then 1 end)`,
+        })
+        .from(users)
+        .leftJoin(tasks, eq(users.id, tasks.userId))
+        .groupBy(users.id, users.displayName, users.avatarColor)
+        .orderBy(sql`count(case when ${tasks.submittedAt} >= ${bdStart} and ${tasks.submittedAt} < ${bdEnd} then 1 end) desc`);
+
+      // Recent activity (today only)
+      recentActivity = await db
+        .select({
+          id: tasks.id,
+          title: tasks.title,
+          status: tasks.status,
+          submittedAt: tasks.submittedAt,
+          userName: users.displayName,
+          userAvatar: users.avatarColor,
+        })
+        .from(tasks)
+        .leftJoin(users, eq(tasks.userId, users.id))
+        .where(and(gte(tasks.submittedAt, bdStart), lte(tasks.submittedAt, bdEnd)))
+        .orderBy(desc(tasks.submittedAt))
+        .limit(20);
+    }
 
     return NextResponse.json({
       stats: {
