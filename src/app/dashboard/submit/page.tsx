@@ -35,7 +35,7 @@ export default function SubmitTaskPage() {
       .catch(console.error);
   }, []);
 
-  const handleFileSelect = async (selectedFile: File) => {
+  const handleFileSelect = useCallback(async (selectedFile: File) => {
     try {
       let fileToUse = selectedFile;
       
@@ -71,7 +71,29 @@ export default function SubmitTaskPage() {
       reader.onload = () => setFilePreview(reader.result as string);
       reader.readAsDataURL(selectedFile);
     }
-  };
+  }, [showToast]);
+
+  // Global paste handler
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf("image") !== -1) {
+          const pastedFile = items[i].getAsFile();
+          if (pastedFile) {
+            handleFileSelect(pastedFile);
+            e.preventDefault();
+            break;
+          }
+        }
+      }
+    };
+
+    window.addEventListener("paste", handlePaste);
+    return () => window.removeEventListener("paste", handlePaste);
+  }, [handleFileSelect]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -276,7 +298,7 @@ export default function SubmitTaskPage() {
                   </svg>
                 </div>
                 <p className="text-text-primary font-medium mb-1">Drop your screenshot here</p>
-                <p className="text-text-muted text-sm">or click to browse • Max 4.5MB</p>
+                <p className="text-text-muted text-sm">or click to browse • Paste (Ctrl+V) anywhere • Max 4.5MB</p>
               </>
             )}
           </div>
