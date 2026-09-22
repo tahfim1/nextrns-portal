@@ -1,8 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useUser } from "./layout";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell
+} from "recharts";
 
 interface Task {
   id: number;
@@ -22,10 +32,19 @@ interface Stats {
   pending: number;
 }
 
+interface EmployeeStat {
+  userId: number;
+  displayName: string;
+  avatarColor: string;
+  todayTasks: number;
+  weekTasks: number;
+}
+
 export default function DashboardPage() {
   const { user } = useUser();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
+  const [employeeStats, setEmployeeStats] = useState<EmployeeStat[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -50,6 +69,10 @@ export default function DashboardPage() {
           approved: statsData.stats.todayApproved,
           pending: statsData.stats.todayPending,
         });
+      }
+
+      if (statsData.employeeStats) {
+        setEmployeeStats(statsData.employeeStats);
       }
     } catch (err) {
       console.error(err);
@@ -122,6 +145,28 @@ export default function DashboardPage() {
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
 
+  const chartData = useMemo(() => {
+    return employeeStats.map(emp => ({
+      name: emp.displayName.split(" ")[0],
+      tasks: emp.todayTasks,
+      color: emp.avatarColor || "#3b82f6"
+    }));
+  }, [employeeStats]);
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="glass-card p-3 border border-glass-border">
+          <p className="font-semibold text-text-primary">{label}</p>
+          <p className="text-sm text-amber-400">
+            {payload[0].value} Tasks
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="max-w-6xl mx-auto">
       {/* Header */}
@@ -170,6 +215,61 @@ export default function DashboardPage() {
               Daily Report
             </span>
           </Link>
+        )}
+      </div>
+
+      {/* Employee Performance Chart Section */}
+      <div className="glass-card p-6 mb-8 fade-in">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+          <h2 className="text-lg font-semibold text-text-primary flex items-center gap-2">
+            <svg className="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+            </svg>
+            Today&apos;s Leaderboard
+          </h2>
+        </div>
+
+        {loading ? (
+          <div className="h-64 w-full shimmer rounded-xl" />
+        ) : chartData.length === 0 || chartData.every(d => d.tasks === 0) ? (
+          <div className="h-64 w-full flex items-center justify-center border border-dashed border-glass-border rounded-xl">
+            <p className="text-text-muted text-sm">No task data available for today</p>
+          </div>
+        ) : (
+          <div className="h-80 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff15" vertical={false} />
+                <XAxis 
+                  dataKey="name" 
+                  stroke="#ffffff60" 
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis 
+                  stroke="#ffffff60" 
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                  allowDecimals={false}
+                />
+                <Tooltip 
+                  content={<CustomTooltip />} 
+                  cursor={{ fill: '#ffffff05' }}
+                />
+                <Bar 
+                  dataKey="tasks" 
+                  radius={[6, 6, 0, 0]}
+                  animationDuration={1500}
+                >
+                  {chartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         )}
       </div>
 

@@ -92,24 +92,22 @@ export async function GET(request: Request) {
       .from(tasks)
       .where(and(gte(tasks.submittedAt, weekStart), userCondition));
 
-    let employeeStats = [];
+    // Per-employee stats (today focused)
+    const employeeStats = await db
+      .select({
+        userId: users.id,
+        displayName: users.displayName,
+        avatarColor: users.avatarColor,
+        todayTasks: sql<number>`count(case when ${tasks.submittedAt} >= ${bdStart} and ${tasks.submittedAt} < ${bdEnd} then 1 end)`,
+        weekTasks: sql<number>`count(case when ${tasks.submittedAt} >= ${weekStart} then 1 end)`,
+      })
+      .from(users)
+      .leftJoin(tasks, eq(users.id, tasks.userId))
+      .groupBy(users.id, users.displayName, users.avatarColor)
+      .orderBy(sql`count(case when ${tasks.submittedAt} >= ${bdStart} and ${tasks.submittedAt} < ${bdEnd} then 1 end) desc`);
+
     let recentActivity = [];
-
     if (isAdmin) {
-      // Per-employee stats (today focused)
-      employeeStats = await db
-        .select({
-          userId: users.id,
-          displayName: users.displayName,
-          avatarColor: users.avatarColor,
-          todayTasks: sql<number>`count(case when ${tasks.submittedAt} >= ${bdStart} and ${tasks.submittedAt} < ${bdEnd} then 1 end)`,
-          weekTasks: sql<number>`count(case when ${tasks.submittedAt} >= ${weekStart} then 1 end)`,
-        })
-        .from(users)
-        .leftJoin(tasks, eq(users.id, tasks.userId))
-        .groupBy(users.id, users.displayName, users.avatarColor)
-        .orderBy(sql`count(case when ${tasks.submittedAt} >= ${bdStart} and ${tasks.submittedAt} < ${bdEnd} then 1 end) desc`);
-
       // Recent activity (today only)
       recentActivity = await db
         .select({
