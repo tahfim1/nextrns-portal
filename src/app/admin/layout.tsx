@@ -85,6 +85,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    const stored = sessionStorage.getItem("nextrns-user");
+    if (stored) {
+      setUser(JSON.parse(stored));
+    } else {
+      fetch("/api/auth/session")
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.user) {
+            setUser(data.user);
+            sessionStorage.setItem("nextrns-user", JSON.stringify(data.user));
+          }
+        })
+        .catch(() => {});
+    }
+  }, []);
 
   const showToast = (message: string, type: "success" | "error" | "info" = "success") => {
     const id = Date.now();
@@ -169,12 +187,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {/* Admin section */}
           <div className="p-4 border-t border-glass-border">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white font-bold text-sm">
-                S
-              </div>
+              {user?.profilePicture ? (
+                <img 
+                  src={user.profilePicture} 
+                  alt="Admin" 
+                  className="w-10 h-10 rounded-full object-cover" 
+                />
+              ) : (
+                <div 
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm"
+                  style={{ backgroundColor: user?.avatarColor || "#f59e0b" }}
+                >
+                  {user?.displayName?.charAt(0).toUpperCase() || "?"}
+                </div>
+              )}
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-text-primary">Sunny</p>
-                <p className="text-xs text-amber-400">Administrator</p>
+                <p className="text-sm font-medium text-text-primary truncate">{user?.displayName || "Loading..."}</p>
+                <p className="text-xs text-amber-400 capitalize">{user?.role || "Administrator"}</p>
               </div>
             </div>
             <button
@@ -203,9 +232,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <h1 className="text-lg font-bold gradient-text">NextRNS</h1>
               <span className="badge bg-amber-500/20 text-amber-400 border-amber-500/20 text-[10px]">ADMIN</span>
             </div>
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white font-bold text-xs">
-              S
-            </div>
+            {user?.profilePicture ? (
+              <img 
+                src={user.profilePicture} 
+                alt="Admin" 
+                className="w-8 h-8 rounded-full object-cover" 
+              />
+            ) : (
+              <div 
+                className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs"
+                style={{ backgroundColor: user?.avatarColor || "#f59e0b" }}
+              >
+                {user?.displayName?.charAt(0).toUpperCase() || "?"}
+              </div>
+            )}
           </header>
 
           <div className="p-4 lg:p-8 relative z-10">{children}</div>

@@ -28,6 +28,7 @@ export const users = pgTable("users", {
   avatarColor: varchar("avatar_color", { length: 7 })
     .default("#3b82f6")
     .notNull(),
+  profilePicture: text("profile_picture"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

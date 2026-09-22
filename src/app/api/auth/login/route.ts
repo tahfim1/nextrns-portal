@@ -45,6 +45,7 @@ export async function POST(request: NextRequest) {
       displayName: foundUser.displayName,
       role: foundUser.role,
       avatarColor: foundUser.avatarColor,
+      profilePicture: foundUser.profilePicture,
     });
 
     return NextResponse.json({
@@ -55,6 +56,7 @@ export async function POST(request: NextRequest) {
         displayName: foundUser.displayName,
         role: foundUser.role,
         avatarColor: foundUser.avatarColor,
+        profilePicture: foundUser.profilePicture,
       },
     });
   } catch (error) {

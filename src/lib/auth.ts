@@ -13,6 +13,7 @@ export interface SessionPayload {
   displayName: string;
   role: "employee" | "admin";
   avatarColor: string;
+  profilePicture?: string | null;
 }
 
 export async function signToken(payload: SessionPayload): Promise<string> {

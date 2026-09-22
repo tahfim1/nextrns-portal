@@ -16,7 +16,8 @@ export async function PATCH(
     }
 
     const { id } = await params;
-    const { resetPassword } = await request.json();
+    const body = await request.json();
+    const { resetPassword, displayName, role, profilePicture } = body;
 
     if (resetPassword) {
       await db
@@ -28,6 +29,20 @@ export async function PATCH(
         .where(eq(users.id, parseInt(id)));
 
       return NextResponse.json({ success: true, message: "Password reset to 12345" });
+    }
+
+    if (displayName || role || profilePicture !== undefined) {
+      const updateData: any = { updatedAt: new Date() };
+      if (displayName) updateData.displayName = displayName;
+      if (role) updateData.role = role;
+      if (profilePicture !== undefined) updateData.profilePicture = profilePicture;
+
+      await db
+        .update(users)
+        .set(updateData)
+        .where(eq(users.id, parseInt(id)));
+
+      return NextResponse.json({ success: true, message: "User updated" });
     }
 
     return NextResponse.json({ error: "No action specified" }, { status: 400 });

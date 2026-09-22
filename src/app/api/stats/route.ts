@@ -100,12 +100,13 @@ export async function GET(request: Request) {
         userId: users.id,
         displayName: users.displayName,
         avatarColor: users.avatarColor,
+        profilePicture: users.profilePicture,
         todayTasks: sql<number>`count(case when ${tasks.submittedAt} >= ${bdStart} and ${tasks.submittedAt} < ${bdEnd} then 1 end)`,
         weekTasks: sql<number>`count(case when ${tasks.submittedAt} >= ${weekStart} then 1 end)`,
       })
       .from(users)
       .leftJoin(tasks, eq(users.id, tasks.userId))
-      .groupBy(users.id, users.displayName, users.avatarColor)
+      .groupBy(users.id, users.displayName, users.avatarColor, users.profilePicture)
       .orderBy(sql`count(case when ${tasks.submittedAt} >= ${bdStart} and ${tasks.submittedAt} < ${bdEnd} then 1 end) desc`);
 
     const employeeStats = rawEmployeeStats.map(emp => ({
@@ -128,6 +129,7 @@ export async function GET(request: Request) {
           submittedAt: tasks.submittedAt,
           userName: users.displayName,
           userAvatar: users.avatarColor,
+          userProfilePicture: users.profilePicture,
         })
         .from(tasks)
         .leftJoin(users, eq(tasks.userId, users.id))

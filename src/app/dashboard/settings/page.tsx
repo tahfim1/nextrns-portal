@@ -1,14 +1,19 @@
 "use client";
 
-import { useState } from "react";
-import { useToast } from "../layout";
+import { useState, useRef } from "react";
+import { useToast, useUser } from "../layout";
+import imageCompression from "browser-image-compression";
 
 export default function SettingsPage() {
   const { showToast } = useToast();
+  const { user } = useUser();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,11 +54,114 @@ export default function SettingsPage() {
     }
   };
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      showToast("File too large. Maximum size is 10MB.", "error");
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      let fileToUpload = file;
+      if (file.size > 1024 * 1024) {
+        showToast("Compressing image...", "info");
+        const options = {
+          maxSizeMB: 1,
+          maxWidthOrHeight: 1024,
+          useWebWorker: true,
+        };
+        fileToUpload = await imageCompression(file, options);
+      }
+
+      showToast("Uploading profile picture...", "info");
+      const formData = new FormData();
+      formData.append("file", fileToUpload);
+
+      const uploadRes = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const uploadData = await uploadRes.json();
+      if (!uploadRes.ok) throw new Error(uploadData.error || "Upload failed");
+
+      const updateRes = await fetch("/api/users/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ profilePicture: uploadData.url }),
+      });
+
+      if (!updateRes.ok) throw new Error("Failed to save profile picture");
+
+      showToast("Profile picture updated successfully! Refreshing...", "success");
+      setTimeout(() => window.location.reload(), 1500);
+    } catch (err: any) {
+      showToast(err.message || "Failed to update profile picture", "error");
+    } finally {
+      setUploadingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   return (
     <div className="max-w-2xl mx-auto fade-in">
       <div className="mb-8">
         <h1 className="text-2xl lg:text-3xl font-bold text-text-primary mb-2">Settings</h1>
         <p className="text-text-secondary">Manage your account preferences</p>
+      </div>
+
+      {/* Profile Picture */}
+      <div className="glass-card p-6 mb-8">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500/20 to-violet-500/20 flex items-center justify-center">
+            <svg className="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-text-primary">Profile Picture</h2>
+            <p className="text-sm text-text-muted">Update your avatar</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-6">
+          {user?.profilePicture ? (
+            <img 
+              src={user.profilePicture} 
+              alt="Profile" 
+              className="w-24 h-24 rounded-full object-cover border-4 border-glass-border" 
+            />
+          ) : (
+            <div 
+              className="w-24 h-24 rounded-full flex items-center justify-center text-white font-bold text-3xl border-4 border-glass-border"
+              style={{ backgroundColor: user?.avatarColor || "#3b82f6" }}
+            >
+              {user?.displayName?.charAt(0).toUpperCase() || "?"}
+            </div>
+          )}
+          
+          <div>
+            <input 
+              type="file" 
+              accept="image/*" 
+              className="hidden" 
+              ref={fileInputRef}
+              onChange={handleImageUpload}
+              disabled={uploadingImage}
+            />
+            <button 
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingImage}
+              className="btn-primary px-5 py-2.5 disabled:opacity-50"
+            >
+              {uploadingImage ? "Uploading..." : "Upload New Picture"}
+            </button>
+            <p className="text-xs text-text-muted mt-2">JPG, PNG, GIF max 10MB. Will be compressed.</p>
+          </div>
+        </div>
       </div>
 
       {/* Change Password */}

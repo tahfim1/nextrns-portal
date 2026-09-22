@@ -23,7 +23,7 @@ export function useToast() {
 
 // User context
 interface UserContextType {
-  user: { userId: number; username: string; displayName: string; role: string; avatarColor: string } | null;
+  user: { userId: number; username: string; displayName: string; role: string; avatarColor: string; profilePicture?: string | null } | null;
 }
 
 export const UserContext = createContext<UserContextType>({ user: null });
@@ -187,12 +187,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {/* User section */}
             <div className="p-4 border-t border-glass-border">
               <div className="flex items-center gap-3 mb-3">
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm"
-                  style={{ backgroundColor: user?.avatarColor || "#3b82f6" }}
-                >
-                  {user?.displayName?.charAt(0).toUpperCase() || "?"}
-                </div>
+                {user?.profilePicture ? (
+                  <img 
+                    src={user.profilePicture} 
+                    alt="User" 
+                    className="w-10 h-10 rounded-full object-cover border-2 border-glass-border" 
+                  />
+                ) : (
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-glass-border"
+                    style={{ backgroundColor: user?.avatarColor || "#3b82f6" }}
+                  >
+                    {user?.displayName?.charAt(0).toUpperCase() || "?"}
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-text-primary truncate">{user?.displayName || "Loading..."}</p>
                   <p className="text-xs text-text-muted truncate">@{user?.username || "..."}</p>
@@ -224,12 +232,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </svg>
               </button>
               <h1 className="text-lg font-bold gradient-text">NextRNS</h1>
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs"
-                style={{ backgroundColor: user?.avatarColor || "#3b82f6" }}
-              >
-                {user?.displayName?.charAt(0).toUpperCase() || "?"}
-              </div>
+              {user?.profilePicture ? (
+                <img 
+                  src={user.profilePicture} 
+                  alt="User" 
+                  className="w-8 h-8 rounded-full object-cover" 
+                />
+              ) : (
+                <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs"
+                  style={{ backgroundColor: user?.avatarColor || "#3b82f6" }}
+                >
+                  {user?.displayName?.charAt(0).toUpperCase() || "?"}
+                </div>
+              )}
             </header>
 
             <div className="p-4 lg:p-8 relative z-10">{children}</div>

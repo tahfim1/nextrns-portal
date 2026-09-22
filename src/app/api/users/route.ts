@@ -19,6 +19,7 @@ export async function GET() {
         displayName: users.displayName,
         role: users.role,
         avatarColor: users.avatarColor,
+        profilePicture: users.profilePicture,
         createdAt: users.createdAt,
         taskCount: sql<number>`(SELECT COUNT(*) FROM tasks WHERE tasks.user_id = ${users.id})`,
       })
@@ -73,6 +74,7 @@ export async function POST(request: NextRequest) {
         displayName: newUser[0].displayName,
         role: newUser[0].role,
         avatarColor: newUser[0].avatarColor,
+        profilePicture: newUser[0].profilePicture,
       },
     });
   } catch (error) {
