@@ -121,7 +121,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <AdminToastContext.Provider value={{ showToast }}>
-      <div className="gradient-bg min-h-screen flex">
+      <div className="gradient-bg min-h-screen flex min-w-0">
         {/* Mobile overlay */}
         {sidebarOpen && (
           <div className="fixed inset-0 bg-black/60 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />
@@ -212,7 +212,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 min-h-screen relative lg:ml-72">
+        <main className="flex-1 min-w-0 min-h-screen relative lg:ml-72">
           {/* Top bar (mobile) */}
           <header className="lg:hidden sticky top-0 z-30 glass-card rounded-none border-b border-glass-border p-4 flex items-center justify-between">
             <button onClick={() => setSidebarOpen(true)} className="p-2 rounded-xl hover:bg-glass-hover transition-colors">

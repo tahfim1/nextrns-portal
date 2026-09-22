@@ -117,7 +117,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <ToastContext.Provider value={{ showToast }}>
       <UserContext.Provider value={{ user }}>
-        <div className="gradient-bg min-h-screen flex">
+        <div className="gradient-bg min-h-screen flex min-w-0">
           {/* Mobile overlay */}
           {sidebarOpen && (
             <div
@@ -214,7 +214,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </aside>
 
           {/* Main content */}
-          <main className="flex-1 min-h-screen relative lg:ml-72">
+          <main className="flex-1 min-w-0 min-h-screen relative lg:ml-72">
             {/* Top bar (mobile) */}
             <header className="lg:hidden sticky top-0 z-30 glass-card rounded-none border-b border-glass-border p-4 flex items-center justify-between">
               <button
