@@ -119,7 +119,12 @@ export default function DailyReportPage() {
             new Paragraph({
               children: [
                 new TextRun({ text: `${index + 1}. [${task.clientName}] ${task.title}`, bold: true }),
-                new TextRun({ text: ` ${task.status === "approved" ? "✅" : task.status === "rejected" ? "❌" : "⏳"} - ${formatBDTime(task.submittedAt)}`, italics: true }),
+                new TextRun({ 
+                  text: ` ${task.status === "approved" ? "✓" : task.status === "rejected" ? "✗" : "•"}`,
+                  color: task.status === "approved" ? "22c55e" : task.status === "rejected" ? "ef4444" : "eab308",
+                  bold: true,
+                }),
+                new TextRun({ text: ` - ${formatBDTime(task.submittedAt)}`, italics: true }),
               ],
               spacing: { before: 120, after: task.description ? 0 : 120 },
             })
