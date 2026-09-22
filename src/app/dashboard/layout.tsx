@@ -134,16 +134,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           >
             {/* Brand */}
             <div className="p-6 border-b border-glass-border">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
-                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                </div>
-                <div>
-                  <h1 className="text-lg font-bold gradient-text">NextRNS</h1>
-                  <p className="text-xs text-text-muted">Task Portal</p>
-                </div>
+              <div className="flex items-center justify-center w-full bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 rounded-xl p-4 shadow-lg shadow-blue-500/10 border border-white/5">
+                <img src="/logo.png" alt="NextRNS" className="w-full h-auto max-w-[180px] drop-shadow-md" />
               </div>
             </div>
 
@@ -233,7 +225,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                 </svg>
               </button>
-              <h1 className="text-lg font-bold gradient-text">NextRNS</h1>
+              <div className="bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 rounded-lg p-2 px-4 shadow-md border border-white/5">
+                <img src="/logo.png" alt="NextRNS" className="h-5 w-auto drop-shadow-sm" />
+              </div>
               {user?.profilePicture ? (
                 <img 
                   src={user.profilePicture} 
