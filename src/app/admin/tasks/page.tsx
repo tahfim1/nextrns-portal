@@ -24,13 +24,34 @@ interface ClientOption {
   name: string;
 }
 
+interface UserOption {
+  id: number;
+  displayName: string;
+}
+
 export default function AdminTasksPage() {
   const { showToast } = useAdminToast();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [clients, setClients] = useState<ClientOption[]>([]);
+  const [users, setUsers] = useState<UserOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("all");
   const [clientFilter, setClientFilter] = useState("all");
+  
+  const [dateFilter, setDateFilter] = useState(() => {
+    if (typeof window !== "undefined") {
+      return new URLSearchParams(window.location.search).get("date") || "";
+    }
+    return "";
+  });
+  
+  const [userFilter, setUserFilter] = useState(() => {
+    if (typeof window !== "undefined") {
+      return new URLSearchParams(window.location.search).get("userId") || "all";
+    }
+    return "all";
+  });
+
   const [expandedTask, setExpandedTask] = useState<number | null>(null);
   const [adminNotes, setAdminNotes] = useState<Record<number, string>>({});
   const [page, setPage] = useState(1);
@@ -39,17 +60,25 @@ export default function AdminTasksPage() {
 
   useEffect(() => {
     fetch("/api/clients").then((r) => r.json()).then((d) => setClients(d.clients || [])).catch(console.error);
+    fetch("/api/users").then((r) => r.json()).then((d) => setUsers(d.users || [])).catch(console.error);
   }, []);
 
   useEffect(() => {
     fetchTasks();
-  }, [statusFilter, clientFilter, page]);
+  }, [statusFilter, clientFilter, userFilter, dateFilter, page]);
 
   const fetchTasks = async () => {
     setLoading(true);
     const params = new URLSearchParams({ page: String(page), limit: "15" });
     if (statusFilter !== "all") params.append("status", statusFilter);
     if (clientFilter !== "all") params.append("clientId", clientFilter);
+    if (userFilter !== "all") params.append("userId", userFilter);
+    if (dateFilter) {
+      const bdStart = new Date(`${dateFilter}T00:00:00+06:00`);
+      const bdEnd = new Date(bdStart.getTime() + 24 * 60 * 60 * 1000);
+      params.append("dateFrom", bdStart.toISOString());
+      params.append("dateTo", bdEnd.toISOString());
+    }
 
     try {
       const res = await fetch(`/api/tasks?${params}`);
@@ -138,6 +167,39 @@ export default function AdminTasksPage() {
             <option key={c.id} value={c.id} className="bg-navy-900">{c.name}</option>
           ))}
         </select>
+        <select
+          value={userFilter}
+          onChange={(e) => { setUserFilter(e.target.value); setPage(1); }}
+          className="input-glass text-sm py-2 px-4 w-auto"
+        >
+          <option value="all" className="bg-navy-900">All Employees</option>
+          {users.map((u) => (
+            <option key={u.id} value={u.id} className="bg-navy-900">{u.displayName}</option>
+          ))}
+        </select>
+        <div className="flex items-center gap-2 bg-glass/30 px-3 py-2 rounded-xl border border-glass-border">
+          <span className="text-xs font-medium text-text-muted">Date:</span>
+          <input
+            type="date"
+            value={dateFilter}
+            onChange={(e) => { setDateFilter(e.target.value); setPage(1); }}
+            className="bg-transparent text-sm text-text-primary focus:outline-none"
+          />
+        </div>
+        {(dateFilter || userFilter !== "all" || clientFilter !== "all" || statusFilter !== "all") && (
+          <button 
+            onClick={() => {
+              setDateFilter("");
+              setUserFilter("all");
+              setClientFilter("all");
+              setStatusFilter("all");
+              setPage(1);
+            }}
+            className="text-xs text-text-muted hover:text-white px-2 transition-colors"
+          >
+            Clear Filters
+          </button>
+        )}
       </div>
 
       {/* Tasks */}
