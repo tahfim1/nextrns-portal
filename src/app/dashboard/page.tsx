@@ -53,8 +53,19 @@ export default function DashboardPage() {
 
   const fetchTasksAndStats = async () => {
     try {
+      const bdDateStr = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Dhaka" });
+      const bdStart = new Date(`${bdDateStr}T00:00:00+06:00`);
+      const bdEnd = new Date(bdStart.getTime() + 24 * 60 * 60 * 1000);
+      
+      const params = new URLSearchParams({
+        limit: "10",
+        personal: "true",
+        dateFrom: bdStart.toISOString(),
+        dateTo: bdEnd.toISOString()
+      });
+
       const [tasksRes, statsRes] = await Promise.all([
-        fetch("/api/tasks?limit=10&personal=true"),
+        fetch(`/api/tasks?${params}`),
         fetch("/api/stats?personal=true")
       ]);
       const tasksData = await tasksRes.json();
