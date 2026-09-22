@@ -16,11 +16,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const user = await db
-      .select()
-      .from(users)
-      .where(eq(users.username, username.toLowerCase().trim()))
-      .limit(1);
+    let user;
+    try {
+      user = await db
+        .select()
+        .from(users)
+        .where(eq(users.username, username.toLowerCase().trim()))
+        .limit(1);
+    } catch (dbError: any) {
+      // Auto-heal missing profile_picture column (common issue on unmigrated deployments)
+      if (dbError.message?.includes("profile_picture") || dbError.message?.includes("column")) {
+        const { sql } = await import("drizzle-orm");
+        try {
+          await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_picture text;`);
+          user = await db
+            .select()
+            .from(users)
+            .where(eq(users.username, username.toLowerCase().trim()))
+            .limit(1);
+        } catch (healError) {
+          throw dbError; // Throw original if healing fails
+        }
+      } else {
+        throw dbError;
+      }
+    }
 
     if (user.length === 0) {
       return NextResponse.json(
@@ -59,10 +79,10 @@ export async function POST(request: NextRequest) {
         profilePicture: foundUser.profilePicture,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Login error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: error.message || "Internal server error" },
       { status: 500 }
     );
   }
