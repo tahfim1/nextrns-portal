@@ -336,9 +336,9 @@ export default function AdminDashboard() {
   return (
     <div className="max-w-7xl mx-auto fade-in">
       {/* Header */}
-      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-text-primary mb-1">Admin Dashboard</h1>
+      <div className="flex flex-col sm:flex-row flex-wrap items-center sm:items-start justify-between gap-4 mb-8 text-center sm:text-left">
+        <div className="w-full sm:w-auto flex flex-col items-center sm:items-start">
+          <h1 className="text-2xl lg:text-3xl font-bold text-text-primary mb-2">Admin Dashboard</h1>
           <p className="text-text-secondary">
             {formattedBdDate && (
               <span className="text-amber-400 font-medium">{formattedBdDate}</span>
@@ -486,6 +486,9 @@ export default function AdminDashboard() {
                     fontSize={12}
                     tickLine={false}
                     axisLine={false}
+                    angle={-45}
+                    textAnchor="end"
+                    height={60}
                   />
                   <YAxis 
                     stroke="#ffffff60" 
@@ -523,7 +526,7 @@ export default function AdminDashboard() {
       <div className="grid lg:grid-cols-2 gap-6 mb-8">
         {/* Employee Performance List */}
         <div className="glass-card p-6">
-          <h2 className="text-lg font-semibold text-text-primary mb-4 flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-text-primary mb-4 flex items-center justify-center sm:justify-start gap-2">
             <svg className="w-5 h-5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
             </svg>
@@ -574,7 +577,7 @@ export default function AdminDashboard() {
 
         {/* Activity Feed for selected date */}
         <div className="glass-card p-6">
-          <h2 className="text-lg font-semibold text-text-primary mb-4 flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-text-primary mb-4 flex items-center justify-center sm:justify-start gap-2">
             <svg className="w-5 h-5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -626,7 +629,7 @@ export default function AdminDashboard() {
 
       {/* Daily Work Export */}
       <div className="glass-card p-6">
-        <h2 className="text-lg font-semibold text-text-primary mb-4 flex items-center gap-2">
+        <h2 className="text-lg font-semibold text-text-primary mb-4 flex items-center justify-center sm:justify-start gap-2">
           <svg className="w-5 h-5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
           </svg>

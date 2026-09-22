@@ -236,12 +236,12 @@ export default function AdminTasksPage() {
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-text-primary truncate">{task.title}</p>
-                  <p className="text-xs text-text-muted mt-0.5">
+                  <p className="text-xs text-text-muted mt-0.5 truncate">
                     {task.userName} • {task.clientName} • {formatDate(task.submittedAt)}
                   </p>
                 </div>
                 <span className={`badge badge-${task.status} flex-shrink-0`}>{task.status}</span>
-                <svg className={`w-5 h-5 text-text-muted transition-transform ${expandedTask === task.id ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <svg className={`w-5 h-5 text-text-muted flex-shrink-0 transition-transform ${expandedTask === task.id ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
                 </svg>
               </button>

@@ -226,7 +226,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </svg>
               </button>
               <div className="bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 rounded-lg p-2 px-4 shadow-md border border-white/5">
-                <img src="/logo.png" alt="NextRNS" className="h-5 w-auto drop-shadow-sm" />
+                <img src="/logo.png" alt="NextRNS" className="h-7 w-auto drop-shadow-sm" />
               </div>
               {user?.profilePicture ? (
                 <img 

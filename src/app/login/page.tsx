@@ -53,7 +53,7 @@ export default function LoginPage() {
       <div className="relative z-10 w-full max-w-md fade-in">
         {/* Logo / Brand */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-full max-w-[280px] rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 p-6 mb-4 pulse-glow shadow-xl shadow-blue-500/20 border border-white/10">
+          <div className="inline-flex items-center justify-center w-full max-w-[280px] rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 p-3 mb-4 pulse-glow shadow-xl shadow-blue-500/20 border border-white/10">
             <img src="/logo.png" alt="NextRNS" className="w-full h-auto drop-shadow-md" />
           </div>
           <p className="text-text-secondary text-sm">Employee Task Management Portal</p>

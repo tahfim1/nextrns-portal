@@ -222,7 +222,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </button>
             <div className="flex items-center gap-3">
               <div className="bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 rounded-lg p-2 px-4 shadow-md border border-white/5">
-                <img src="/logo.png" alt="NextRNS" className="h-5 w-auto drop-shadow-sm" />
+                <img src="/logo.png" alt="NextRNS" className="h-7 w-auto drop-shadow-sm" />
               </div>
               <span className="badge bg-amber-500/20 text-amber-400 border-amber-500/20 text-[10px] uppercase font-bold tracking-wider">ADMIN</span>
             </div>
