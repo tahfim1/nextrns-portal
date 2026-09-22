@@ -82,6 +82,8 @@ export default function AdminDashboard() {
   const [loadingStats, setLoadingStats] = useState(true);
   const [loadingChart, setLoadingChart] = useState(true);
   const [approving, setApproving] = useState(false);
+  const [autoApproval, setAutoApproval] = useState(false);
+  const [togglingAutoApproval, setTogglingAutoApproval] = useState(false);
 
   // Export state
   const [exportDate, setExportDate] = useState(getBDToday());
@@ -114,9 +116,23 @@ export default function AdminDashboard() {
       .finally(() => setLoadingChart(false));
   }, []);
 
+  const fetchSettings = useCallback(() => {
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.settings && data.settings.auto_approval === "true") {
+          setAutoApproval(true);
+        } else {
+          setAutoApproval(false);
+        }
+      })
+      .catch(console.error);
+  }, []);
+
   useEffect(() => {
     fetchGeneralStats();
-  }, [fetchGeneralStats]);
+    fetchSettings();
+  }, [fetchGeneralStats, fetchSettings]);
 
   useEffect(() => {
     fetchEmployeeStats(chartDate);
@@ -145,6 +161,28 @@ export default function AdminDashboard() {
       showToast("Something went wrong", "error");
     } finally {
       setApproving(false);
+    }
+  };
+
+  const toggleAutoApproval = async () => {
+    setTogglingAutoApproval(true);
+    const newValue = !autoApproval;
+    try {
+      const res = await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: "auto_approval", value: newValue ? "true" : "false" }),
+      });
+      if (res.ok) {
+        setAutoApproval(newValue);
+        showToast(`Auto-approval turned ${newValue ? "ON" : "OFF"}`, "success");
+      } else {
+        showToast("Failed to update setting", "error");
+      }
+    } catch {
+      showToast("Something went wrong", "error");
+    } finally {
+      setTogglingAutoApproval(false);
     }
   };
 
@@ -356,6 +394,32 @@ export default function AdminDashboard() {
             )}
           </button>
         )}
+      </div>
+
+      {/* Auto Approval Banner */}
+      <div className="mb-8 glass-card p-4 flex items-center justify-between border-l-4 border-l-amber-500">
+        <div>
+          <h3 className="font-bold text-text-primary flex items-center gap-2">
+            <svg className="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 10.5V6.75a4.5 4.5 0 119 0v3.75M3.75 21.75h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H3.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+            </svg>
+            Auto-Approval System
+          </h3>
+          <p className="text-sm text-text-secondary mt-1">When enabled, all new tasks submitted by employees are instantly marked as &quot;approved&quot;.</p>
+        </div>
+        <button
+          onClick={toggleAutoApproval}
+          disabled={togglingAutoApproval}
+          className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none disabled:opacity-50 ${
+            autoApproval ? "bg-green-500" : "bg-glass-border"
+          }`}
+        >
+          <span
+            className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
+              autoApproval ? "translate-x-7" : "translate-x-1"
+            }`}
+          />
+        </button>
       </div>
 
       {/* Top Performer Banner */}

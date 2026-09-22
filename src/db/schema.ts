@@ -60,6 +60,13 @@ export const tasks = pgTable("tasks", {
   reviewedAt: timestamp("reviewed_at"),
 });
 
+// Settings Table
+export const settings = pgTable("settings", {
+  key: varchar("key", { length: 100 }).primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Type exports
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { tasks, users, clients } from "@/db/schema";
+import { tasks, users, clients, settings } from "@/db/schema";
 import { eq, desc, and, gte, sql } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
 
@@ -119,6 +119,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check auto approval setting
+    const autoApprovalSetting = await db
+      .select({ value: settings.value })
+      .from(settings)
+      .where(eq(settings.key, "auto_approval"))
+      .limit(1);
+    
+    const isAutoApprove = autoApprovalSetting.length > 0 && autoApprovalSetting[0].value === "true";
+
     const newTask = await db
       .insert(tasks)
       .values({
@@ -129,6 +138,7 @@ export async function POST(request: NextRequest) {
         proofType: proofType || "screenshot",
         proofUrl: proofUrl || "",
         proofLink: proofLink || null,
+        status: isAutoApprove ? "approved" : "submitted",
       })
       .returning();
 
