@@ -81,6 +81,7 @@ export default function AdminDashboard() {
   
   // Employee specific stats (Date controllable)
   const [chartDate, setChartDate] = useState(getBDToday());
+  const [chartDateTo, setChartDateTo] = useState("");
   const [employeeStats, setEmployeeStats] = useState<EmployeeStat[]>([]);
   const [recentActivity, setRecentActivity] = useState<Activity[]>([]);
   
@@ -107,10 +108,12 @@ export default function AdminDashboard() {
       .finally(() => setLoadingStats(false));
   }, []);
 
-  // Fetch employee stats for a specific date
-  const fetchEmployeeStats = useCallback((date: string) => {
+  // Fetch employee stats for a specific date or range
+  const fetchEmployeeStats = useCallback((date: string, dateTo?: string) => {
     setLoadingChart(true);
-    fetch(`/api/stats?date=${date}`)
+    let url = `/api/stats?date=${date}`;
+    if (dateTo) url += `&dateTo=${dateTo}`;
+    fetch(url)
       .then((r) => r.json())
       .then((data) => {
         setEmployeeStats(data.employeeStats || []);
@@ -125,8 +128,10 @@ export default function AdminDashboard() {
   }, [fetchGeneralStats]);
 
   useEffect(() => {
-    fetchEmployeeStats(chartDate);
-  }, [chartDate, fetchEmployeeStats]);
+    fetchEmployeeStats(chartDate, chartDateTo);
+  }, [chartDate, chartDateTo, fetchEmployeeStats]);
+
+  const displayDateRange = chartDateTo ? `${chartDate} to ${chartDateTo}` : chartDate;
 
   const handleApproveAll = async () => {
     if (!stats || stats.todayPending === 0) return;
@@ -143,7 +148,7 @@ export default function AdminDashboard() {
       if (res.ok) {
         showToast(`Approved ${data.count} tasks!`, "success");
         fetchGeneralStats();
-        fetchEmployeeStats(chartDate); // Refresh chart too
+        fetchEmployeeStats(chartDate, chartDateTo); // Refresh chart too
       } else {
         showToast(data.error || "Failed to approve", "error");
       }
@@ -432,7 +437,7 @@ export default function AdminDashboard() {
               </div>
             </div>
             <div>
-              <p className="text-sm font-medium text-amber-500 mb-1 tracking-wider uppercase">Top Performer ({chartDate})</p>
+              <p className="text-sm font-medium text-amber-500 mb-1 tracking-wider uppercase">Top Performer ({displayDateRange})</p>
               <h2 className="text-2xl font-bold text-text-primary">
                 {topPerformer.displayName}
               </h2>
@@ -453,13 +458,19 @@ export default function AdminDashboard() {
             </svg>
             Employee Performance Chart
           </h2>
-          <div className="flex items-center gap-3 bg-glass/30 p-1.5 rounded-xl border border-glass-border">
-            <span className="text-xs font-medium text-text-muted pl-2">Select Date:</span>
+            <span className="text-xs font-medium text-text-muted pl-2">From:</span>
             <input
               type="date"
               value={chartDate}
               onChange={(e) => setChartDate(e.target.value)}
-              className="bg-transparent text-sm text-text-primary font-medium focus:outline-none border-none py-1 px-2 cursor-pointer"
+              className="bg-transparent text-sm text-text-primary font-medium focus:outline-none border-none py-1 px-1 cursor-pointer"
+            />
+            <span className="text-xs font-medium text-text-muted pl-1">To:</span>
+            <input
+              type="date"
+              value={chartDateTo}
+              onChange={(e) => setChartDateTo(e.target.value)}
+              className="bg-transparent text-sm text-text-primary font-medium focus:outline-none border-none py-1 px-1 cursor-pointer"
             />
           </div>
         </div>
@@ -471,8 +482,8 @@ export default function AdminDashboard() {
             <svg className="w-12 h-12 text-text-muted mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
             </svg>
-            <p className="text-text-secondary font-medium">No tasks recorded for {chartDate}</p>
-            <p className="text-text-muted text-sm mt-1">Select a different date to view activity</p>
+            <p className="text-text-secondary font-medium">No tasks recorded for {displayDateRange}</p>
+            <p className="text-text-muted text-sm mt-1">Select a different date range to view activity</p>
           </div>
         ) : (
           <div className="h-[350px] w-full overflow-x-auto custom-scrollbar">
@@ -530,7 +541,7 @@ export default function AdminDashboard() {
             <svg className="w-5 h-5 text-text-muted flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
             </svg>
-            Activity for {chartDate}
+            <span className="truncate">Activity for {displayDateRange}</span>
           </h2>
           {loadingChart ? (
             <div className="space-y-3">
@@ -581,7 +592,7 @@ export default function AdminDashboard() {
             <svg className="w-5 h-5 text-text-muted flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span className="truncate">Task Feed ({chartDate})</span>
+            <span className="truncate">Task Feed ({displayDateRange})</span>
           </h2>
           {loadingChart ? (
             <div className="space-y-3">

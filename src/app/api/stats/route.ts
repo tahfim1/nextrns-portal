@@ -4,11 +4,19 @@ import { tasks, users } from "@/db/schema";
 import { sql, desc, eq, gte, lte, and } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
 
-function getBDToday(customDate?: string) {
+function getBDDateRange(customDate?: string, customDateTo?: string) {
   const bdDateStr = customDate || new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Dhaka" }); // YYYY-MM-DD
   const bdStart = new Date(`${bdDateStr}T00:00:00+06:00`);
-  const bdEnd = new Date(bdStart.getTime() + 24 * 60 * 60 * 1000);
-  return { bdStart, bdEnd, bdDateStr };
+  
+  let bdEnd;
+  if (customDateTo) {
+    const endStr = new Date(`${customDateTo}T00:00:00+06:00`);
+    bdEnd = new Date(endStr.getTime() + 24 * 60 * 60 * 1000);
+  } else {
+    bdEnd = new Date(bdStart.getTime() + 24 * 60 * 60 * 1000);
+  }
+  
+  return { bdStart, bdEnd, bdDateStr, customDateTo };
 }
 
 function getBDWeekStart() {
@@ -24,6 +32,7 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
     const dateParam = url.searchParams.get("date");
+    const dateToParam = url.searchParams.get("dateTo");
 
     const session = await getSession();
     if (!session) {
@@ -34,7 +43,7 @@ export async function GET(request: Request) {
     const personalOnly = url.searchParams.get("personal") === "true";
     const fetchGlobalStats = isAdmin && !personalOnly;
 
-    const { bdStart, bdEnd, bdDateStr } = getBDToday(dateParam || undefined);
+    const { bdStart, bdEnd, bdDateStr, customDateTo } = getBDDateRange(dateParam || undefined, dateToParam || undefined);
     const weekStart = getBDWeekStart();
 
     // Base condition for user filtering
