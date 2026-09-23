@@ -458,6 +458,7 @@ export default function AdminDashboard() {
             </svg>
             Employee Performance Chart
           </h2>
+          <div className="flex items-center gap-3 bg-glass/30 p-1.5 rounded-xl border border-glass-border">
             <span className="text-xs font-medium text-text-muted pl-2">From:</span>
             <input
               type="date"
