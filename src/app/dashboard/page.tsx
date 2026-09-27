@@ -224,9 +224,11 @@ export default function DashboardPage() {
 
   const chartData = useMemo(() => {
     return employeeStats.map(emp => ({
+      userId: emp.userId,
       name: emp.displayName.split(" ")[0],
       tasks: emp.todayTasks,
-      color: emp.avatarColor || "#3b82f6"
+      color: emp.avatarColor || "#3b82f6",
+      profilePicture: emp.profilePicture,
     }));
   }, [employeeStats]);
 
@@ -242,6 +244,40 @@ export default function DashboardPage() {
       );
     }
     return null;
+  };
+
+  const CustomLabel = (props: any) => {
+    const { x, y, width, value, payload } = props;
+    const size = 30;
+    const cx = x + width / 2 - size / 2;
+    const cy = y - size - 8;
+
+    if (value === 0) {
+      return (
+        <foreignObject x={cx} y={cy} width={size} height={size}>
+          <img src="/zero-tasks.png" alt="Zero tasks" className="w-full h-full rounded-full object-cover border border-glass-border shadow-md" />
+        </foreignObject>
+      );
+    }
+
+    if (payload.profilePicture) {
+      return (
+        <foreignObject x={cx} y={cy} width={size} height={size}>
+          <img src={payload.profilePicture} alt={payload.name} className="w-full h-full rounded-full object-cover border border-glass-border shadow-md" />
+        </foreignObject>
+      );
+    }
+
+    return (
+      <foreignObject x={cx} y={cy} width={size} height={size}>
+        <div 
+          className="w-full h-full rounded-full flex items-center justify-center text-white font-bold text-[12px] border border-glass-border shadow-md"
+          style={{ backgroundColor: payload.color || "#3b82f6" }}
+        >
+          {payload.name.charAt(0)}
+        </div>
+      </foreignObject>
+    );
   };
 
   return (
@@ -340,7 +376,7 @@ export default function DashboardPage() {
 
         {leaderboardLoading ? (
           <div className="h-64 w-full shimmer rounded-xl" />
-        ) : chartData.length === 0 || chartData.every(d => d.tasks === 0) ? (
+        ) : chartData.length === 0 ? (
           <div className="h-64 w-full flex items-center justify-center border border-dashed border-glass-border rounded-xl">
             <p className="text-text-muted text-sm">No task data available for selected period</p>
           </div>
@@ -375,6 +411,7 @@ export default function DashboardPage() {
                     dataKey="tasks" 
                     radius={[6, 6, 0, 0]}
                     animationDuration={1500}
+                    label={<CustomLabel />}
                   >
                     {chartData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />

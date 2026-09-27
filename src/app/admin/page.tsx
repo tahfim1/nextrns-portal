@@ -318,9 +318,11 @@ export default function AdminDashboard() {
   // Chart Data Preparation
   const chartData = useMemo(() => {
     return employeeStats.map(emp => ({
+      userId: emp.userId,
       name: emp.displayName.split(" ")[0], // First name only for cleaner chart
       tasks: emp.todayTasks,
-      color: emp.avatarColor || "#3b82f6"
+      color: emp.avatarColor || "#3b82f6",
+      profilePicture: emp.profilePicture,
     }));
   }, [employeeStats]);
 
@@ -336,6 +338,40 @@ export default function AdminDashboard() {
       );
     }
     return null;
+  };
+
+  const CustomLabel = (props: any) => {
+    const { x, y, width, value, payload } = props;
+    const size = 30;
+    const cx = x + width / 2 - size / 2;
+    const cy = y - size - 8;
+
+    if (value === 0) {
+      return (
+        <foreignObject x={cx} y={cy} width={size} height={size}>
+          <img src="/zero-tasks.png" alt="Zero tasks" className="w-full h-full rounded-full object-cover border border-glass-border shadow-md" />
+        </foreignObject>
+      );
+    }
+
+    if (payload.profilePicture) {
+      return (
+        <foreignObject x={cx} y={cy} width={size} height={size}>
+          <img src={payload.profilePicture} alt={payload.name} className="w-full h-full rounded-full object-cover border border-glass-border shadow-md" />
+        </foreignObject>
+      );
+    }
+
+    return (
+      <foreignObject x={cx} y={cy} width={size} height={size}>
+        <div 
+          className="w-full h-full rounded-full flex items-center justify-center text-white font-bold text-[12px] border border-glass-border shadow-md"
+          style={{ backgroundColor: payload.color || "#3b82f6" }}
+        >
+          {payload.name.charAt(0)}
+        </div>
+      </foreignObject>
+    );
   };
 
   return (
@@ -478,7 +514,7 @@ export default function AdminDashboard() {
 
         {loadingChart ? (
           <div className="h-[300px] w-full shimmer rounded-xl" />
-        ) : chartData.length === 0 || chartData.every(d => d.tasks === 0) ? (
+        ) : chartData.length === 0 ? (
           <div className="h-[300px] w-full flex flex-col items-center justify-center border border-dashed border-glass-border rounded-xl bg-glass/20">
             <svg className="w-12 h-12 text-text-muted mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
@@ -523,6 +559,7 @@ export default function AdminDashboard() {
                       }
                     }}
                     className="cursor-pointer hover:opacity-80"
+                    label={<CustomLabel />}
                   >
                     {chartData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
