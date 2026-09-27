@@ -36,6 +36,7 @@ interface EmployeeStat {
   userId: number;
   displayName: string;
   avatarColor: string;
+  profilePicture?: string | null;
   todayTasks: number;
   weekTasks: number;
 }
