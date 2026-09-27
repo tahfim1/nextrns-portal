@@ -341,7 +341,9 @@ export default function AdminDashboard() {
   };
 
   const CustomLabel = (props: any) => {
-    const { x, y, width, value, payload } = props;
+    const { x, y, width, value, index } = props;
+    const payload = chartData[index];
+    
     const size = 30;
     const cx = (x || 0) + (width || 0) / 2 - size / 2;
     const cy = (y || 0) - size - 8;
@@ -528,7 +530,7 @@ export default function AdminDashboard() {
           <div className="h-[350px] w-full overflow-x-auto custom-scrollbar">
             <div className="min-w-[600px] h-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                <BarChart data={chartData} margin={{ top: 50, right: 30, left: 0, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
                   <XAxis 
                     dataKey="name" 
