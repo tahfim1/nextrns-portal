@@ -250,8 +250,10 @@ export default function DashboardPage() {
   const CustomLabel = (props: any) => {
     const { x, y, width, value, payload } = props;
     const size = 30;
-    const cx = x + width / 2 - size / 2;
-    const cy = y - size - 8;
+    const cx = (x || 0) + (width || 0) / 2 - size / 2;
+    const cy = (y || 0) - size - 8;
+
+    if (!payload) return null;
 
     if (value === 0) {
       return (
@@ -264,7 +266,7 @@ export default function DashboardPage() {
     if (payload.profilePicture) {
       return (
         <foreignObject x={cx} y={cy} width={size} height={size}>
-          <img src={payload.profilePicture} alt={payload.name} className="w-full h-full rounded-full object-cover border border-glass-border shadow-md" />
+          <img src={payload.profilePicture} alt={payload.name || ""} className="w-full h-full rounded-full object-cover border border-glass-border shadow-md" />
         </foreignObject>
       );
     }
@@ -275,7 +277,7 @@ export default function DashboardPage() {
           className="w-full h-full rounded-full flex items-center justify-center text-white font-bold text-[12px] border border-glass-border shadow-md"
           style={{ backgroundColor: payload.color || "#3b82f6" }}
         >
-          {payload.name.charAt(0)}
+          {payload.name ? payload.name.charAt(0) : "?"}
         </div>
       </foreignObject>
     );
