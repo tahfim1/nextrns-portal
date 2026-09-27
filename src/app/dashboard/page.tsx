@@ -251,7 +251,8 @@ export default function DashboardPage() {
     const { x, y, width, value, index } = props;
     const payload = chartData[index];
     
-    const size = 30;
+    // Make the image size match the bar width (capped at 60px max)
+    const size = width ? Math.min(width, 60) : 40;
     const cx = (x || 0) + (width || 0) / 2 - size / 2;
     const cy = (y || 0) - size - 8;
 
@@ -389,7 +390,7 @@ export default function DashboardPage() {
           <div className="h-80 w-full overflow-x-auto custom-scrollbar">
             <div className="min-w-[600px] h-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 50, right: 30, left: 0, bottom: 5 }}>
+                <BarChart data={chartData} margin={{ top: 70, right: 30, left: 0, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#ffffff15" vertical={false} />
                   <XAxis 
                     dataKey="name" 
