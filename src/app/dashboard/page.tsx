@@ -40,12 +40,45 @@ interface EmployeeStat {
   weekTasks: number;
 }
 
+const BD_TZ = "Asia/Dhaka";
+
+function getBDToday() {
+  const now = new Date();
+  return now.toLocaleDateString("en-CA", { timeZone: BD_TZ });
+}
+
+function getBDThisWeek() {
+  const bdNow = new Date(new Date().toLocaleString("en-US", { timeZone: BD_TZ }));
+  const day = bdNow.getDay();
+  const diff = bdNow.getDate() - day + (day === 0 ? -6 : 1);
+  const start = new Date(bdNow);
+  start.setDate(diff);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  return { 
+    from: start.toLocaleDateString("en-CA", { timeZone: BD_TZ }), 
+    to: end.toLocaleDateString("en-CA", { timeZone: BD_TZ }) 
+  };
+}
+
+function getBDThisMonth() {
+  const bdNow = new Date(new Date().toLocaleString("en-US", { timeZone: BD_TZ }));
+  const start = new Date(bdNow.getFullYear(), bdNow.getMonth(), 1);
+  const end = new Date(bdNow.getFullYear(), bdNow.getMonth() + 1, 0);
+  return { 
+    from: start.toLocaleDateString("en-CA", { timeZone: BD_TZ }), 
+    to: end.toLocaleDateString("en-CA", { timeZone: BD_TZ }) 
+  };
+}
+
 export default function DashboardPage() {
   const { user } = useUser();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [employeeStats, setEmployeeStats] = useState<EmployeeStat[]>([]);
   const [loading, setLoading] = useState(true);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(true);
+  const [dateFilter, setDateFilter] = useState<"today" | "week" | "month">("today");
 
   useEffect(() => {
     fetchTasksAndStats();
@@ -89,8 +122,41 @@ export default function DashboardPage() {
       console.error(err);
     } finally {
       setLoading(false);
+      setLeaderboardLoading(false);
     }
   };
+
+  useEffect(() => {
+    // Only re-fetch leaderboard when filter changes (skip initial mount as it's fetched above)
+    if (loading) return; 
+
+    let date = getBDToday();
+    let dateTo = "";
+
+    if (dateFilter === "week") {
+      const { from, to } = getBDThisWeek();
+      date = from;
+      dateTo = to;
+    } else if (dateFilter === "month") {
+      const { from, to } = getBDThisMonth();
+      date = from;
+      dateTo = to;
+    }
+
+    setLeaderboardLoading(true);
+    let url = `/api/stats?personal=true&date=${date}`;
+    if (dateTo) url += `&dateTo=${dateTo}`;
+
+    fetch(url)
+      .then(res => res.json())
+      .then(data => {
+        if (data.employeeStats) {
+          setEmployeeStats(data.employeeStats);
+        }
+      })
+      .catch(console.error)
+      .finally(() => setLeaderboardLoading(false));
+  }, [dateFilter]);
 
 
 
@@ -236,15 +302,47 @@ export default function DashboardPage() {
             <svg className="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
             </svg>
-            Today&apos;s Leaderboard
+            Leaderboard
           </h2>
+          <div className="flex items-center gap-1 bg-glass/30 p-1 rounded-xl border border-glass-border">
+            <button
+              onClick={() => setDateFilter("today")}
+              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
+                dateFilter === "today" 
+                  ? "bg-amber-500/20 text-amber-400" 
+                  : "text-text-muted hover:text-text-primary hover:bg-white/5"
+              }`}
+            >
+              Today
+            </button>
+            <button
+              onClick={() => setDateFilter("week")}
+              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
+                dateFilter === "week" 
+                  ? "bg-amber-500/20 text-amber-400" 
+                  : "text-text-muted hover:text-text-primary hover:bg-white/5"
+              }`}
+            >
+              This Week
+            </button>
+            <button
+              onClick={() => setDateFilter("month")}
+              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
+                dateFilter === "month" 
+                  ? "bg-amber-500/20 text-amber-400" 
+                  : "text-text-muted hover:text-text-primary hover:bg-white/5"
+              }`}
+            >
+              This Month
+            </button>
+          </div>
         </div>
 
-        {loading ? (
+        {leaderboardLoading ? (
           <div className="h-64 w-full shimmer rounded-xl" />
         ) : chartData.length === 0 || chartData.every(d => d.tasks === 0) ? (
           <div className="h-64 w-full flex items-center justify-center border border-dashed border-glass-border rounded-xl">
-            <p className="text-text-muted text-sm">No task data available for today</p>
+            <p className="text-text-muted text-sm">No task data available for selected period</p>
           </div>
         ) : (
           <div className="h-80 w-full overflow-x-auto custom-scrollbar">
