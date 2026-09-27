@@ -417,6 +417,7 @@ export default function DashboardPage() {
                     dataKey="tasks" 
                     radius={[6, 6, 0, 0]}
                     animationDuration={1500}
+                    minPointSize={1}
                     label={<CustomLabel />}
                   >
                     {chartData.map((entry, index) => (

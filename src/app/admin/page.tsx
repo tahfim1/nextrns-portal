@@ -558,6 +558,7 @@ export default function AdminDashboard() {
                     dataKey="tasks" 
                     radius={[6, 6, 0, 0]}
                     animationDuration={1500}
+                    minPointSize={1}
                     onClick={(data) => {
                       if (data && data.payload && data.payload.userId) {
                         router.push(`/admin/tasks?userId=${data.payload.userId}&date=${chartDate}`);
