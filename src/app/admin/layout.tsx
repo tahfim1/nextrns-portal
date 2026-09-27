@@ -91,17 +91,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const stored = sessionStorage.getItem("nextrns-user");
     if (stored) {
       setUser(JSON.parse(stored));
-    } else {
-      fetch("/api/auth/session")
-        .then((r) => r.json())
-        .then((data) => {
-          if (data.user) {
-            setUser(data.user);
-            sessionStorage.setItem("nextrns-user", JSON.stringify(data.user));
-          }
-        })
-        .catch(() => {});
     }
+    
+    // Always fetch from session endpoint to keep data fresh
+    fetch("/api/auth/session")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.user) {
+          setUser(data.user);
+          sessionStorage.setItem("nextrns-user", JSON.stringify(data.user));
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const showToast = (message: string, type: "success" | "error" | "info" = "success") => {

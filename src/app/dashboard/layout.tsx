@@ -85,18 +85,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const stored = sessionStorage.getItem("nextrns-user");
     if (stored) {
       setUser(JSON.parse(stored));
-    } else {
-      // Fetch from session endpoint
-      fetch("/api/auth/session")
-        .then((r) => r.json())
-        .then((data) => {
-          if (data.user) {
-            setUser(data.user);
-            sessionStorage.setItem("nextrns-user", JSON.stringify(data.user));
-          }
-        })
-        .catch(() => {});
     }
+    
+    // Always fetch from session endpoint to keep data fresh (like profile pictures)
+    fetch("/api/auth/session")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.user) {
+          setUser(data.user);
+          sessionStorage.setItem("nextrns-user", JSON.stringify(data.user));
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const showToast = (message: string, type: "success" | "error" | "info" = "success") => {
