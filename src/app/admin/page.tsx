@@ -561,7 +561,9 @@ export default function AdminDashboard() {
                     minPointSize={1}
                     onClick={(data) => {
                       if (data && data.payload && data.payload.userId) {
-                        router.push(`/admin/tasks?userId=${data.payload.userId}&date=${chartDate}`);
+                        let url = `/admin/tasks?userId=${data.payload.userId}&date=${chartDate}`;
+                        if (chartDateTo) url += `&dateTo=${chartDateTo}`;
+                        router.push(url);
                       }
                     }}
                     className="cursor-pointer hover:opacity-80"

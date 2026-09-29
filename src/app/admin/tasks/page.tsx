@@ -46,6 +46,13 @@ export default function AdminTasksPage() {
     return "";
   });
   
+  const [dateFilterTo, setDateFilterTo] = useState(() => {
+    if (typeof window !== "undefined") {
+      return new URLSearchParams(window.location.search).get("dateTo") || "";
+    }
+    return "";
+  });
+  
   const [userFilter, setUserFilter] = useState(() => {
     if (typeof window !== "undefined") {
       return new URLSearchParams(window.location.search).get("userId") || "all";
@@ -66,7 +73,7 @@ export default function AdminTasksPage() {
 
   useEffect(() => {
     fetchTasks();
-  }, [statusFilter, clientFilter, userFilter, dateFilter, page]);
+  }, [statusFilter, clientFilter, userFilter, dateFilter, dateFilterTo, page]);
 
   const fetchTasks = async () => {
     setLoading(true);
@@ -76,7 +83,12 @@ export default function AdminTasksPage() {
     if (userFilter !== "all") params.append("userId", userFilter);
     if (dateFilter) {
       const bdStart = new Date(`${dateFilter}T00:00:00+06:00`);
-      const bdEnd = new Date(bdStart.getTime() + 24 * 60 * 60 * 1000);
+      let bdEnd;
+      if (dateFilterTo) {
+        bdEnd = new Date(new Date(`${dateFilterTo}T00:00:00+06:00`).getTime() + 24 * 60 * 60 * 1000);
+      } else {
+        bdEnd = new Date(bdStart.getTime() + 24 * 60 * 60 * 1000);
+      }
       params.append("dateFrom", bdStart.toISOString());
       params.append("dateTo", bdEnd.toISOString());
     }
@@ -179,18 +191,26 @@ export default function AdminTasksPage() {
           ))}
         </select>
         <div className="flex items-center gap-2 bg-glass/30 px-3 py-2 rounded-xl border border-glass-border">
-          <span className="text-xs font-medium text-text-muted">Date:</span>
+          <span className="text-xs font-medium text-text-muted">From:</span>
           <input
             type="date"
             value={dateFilter}
             onChange={(e) => { setDateFilter(e.target.value); setPage(1); }}
             className="bg-transparent text-sm text-text-primary focus:outline-none"
           />
+          <span className="text-xs font-medium text-text-muted ml-2">To:</span>
+          <input
+            type="date"
+            value={dateFilterTo}
+            onChange={(e) => { setDateFilterTo(e.target.value); setPage(1); }}
+            className="bg-transparent text-sm text-text-primary focus:outline-none"
+          />
         </div>
-        {(dateFilter || userFilter !== "all" || clientFilter !== "all" || statusFilter !== "all") && (
+        {(dateFilter || dateFilterTo || userFilter !== "all" || clientFilter !== "all" || statusFilter !== "all") && (
           <button 
             onClick={() => {
               setDateFilter("");
+              setDateFilterTo("");
               setUserFilter("all");
               setClientFilter("all");
               setStatusFilter("all");
